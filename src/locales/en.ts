@@ -2,6 +2,10 @@ import { BIN_NAME as bin } from "../project";
 
 export const en = {
   meta: { name: "English" },
+  format: {
+    dateTime: (date: Date, timeZone: string) =>
+      `${new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short", timeZone }).format(date)} (${timeZone})`,
+  },
   label: { warning: "Warning:", error: "Error:", hint: "Hint:" },
   program: {
     description: "Ask a virtual API how someone feels. A sample CLI for Agent Skills.",
@@ -81,9 +85,22 @@ For agents:
       existing: (path: string) => `Client Credentials already exist in ${path}.`,
       saved: (path: string, id: string) => `Saved Client Credentials for "${id}" to ${path}`,
     },
+    issueToken: {
+      description: "issue an Access Token with the Client Credentials and save the Token State",
+      noCredentials: "No Client Credentials found.",
+      rejected: "The API rejected the Client Credentials.",
+      issued: (expiresAt: string) => `Issued an Access Token (expires ${expiresAt}).`,
+    },
+    purgeToken: {
+      description: "delete the Token State",
+      purged: (path: string) => `Deleted the Token State: ${path}`,
+      none: "There was no Token State to delete.",
+    },
   },
   warnings: {
     overwritten: (path: string) => `Overwrote the existing ${path}.`,
+    invalidTimezone: (value: string, fallback: string) =>
+      `Invalid time zone "${value}"; using "${fallback}".`,
     tooOpen: (path: string) => `${path} is readable by others; run: chmod 600 "${path}"`,
     unsupportedLang: (value: string, fallback: string) =>
       `No Language Pack for "${value}"; falling back to "${fallback}".`,
@@ -91,6 +108,7 @@ For agents:
   hints: {
     runConfigInit: `Recreate it with \`${bin} config init\`.`,
     runAuthClient: `Register them with \`${bin} auth client\`.`,
+    runIssueToken: `Run \`${bin} auth issue-token\` first.`,
   },
   errors: {
     unsupportedLang: (value: string, supported: string) =>

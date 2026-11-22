@@ -3,6 +3,10 @@ import type { LanguagePack } from "./index";
 
 export const ko: LanguagePack = {
   meta: { name: "한국어" },
+  format: {
+    dateTime: (date, timeZone) =>
+      `${new Intl.DateTimeFormat("ko-KR", { dateStyle: "long", timeStyle: "short", timeZone }).format(date)} (${timeZone})`,
+  },
   label: { warning: "경고:", error: "오류:", hint: "힌트:" },
   program: {
     description: "가상 API에 누군가의 기분을 물어봅니다. Agent Skill용 샘플 CLI입니다.",
@@ -82,9 +86,22 @@ export const ko: LanguagePack = {
       existing: (path) => `${path}에 이미 Client Credentials가 있습니다.`,
       saved: (path, id) => `"${id}" Client Credentials를 ${path}에 저장했습니다`,
     },
+    issueToken: {
+      description: "Client Credentials로 Access Token을 발급해 Token State로 저장",
+      noCredentials: "Client Credentials가 없습니다.",
+      rejected: "API가 Client Credentials를 거부했습니다.",
+      issued: (expiresAt) => `Access Token을 발급했습니다 (만료: ${expiresAt}).`,
+    },
+    purgeToken: {
+      description: "Token State 삭제",
+      purged: (path) => `Token State를 삭제했습니다: ${path}`,
+      none: "삭제할 Token State가 없습니다.",
+    },
   },
   warnings: {
     overwritten: (path) => `기존 ${path}을(를) 덮어썼습니다.`,
+    invalidTimezone: (value, fallback) =>
+      `잘못된 타임존 "${value}" 대신 "${fallback}"을 사용합니다.`,
     tooOpen: (path) => `${path}을(를) 다른 사용자가 읽을 수 있습니다. 실행: chmod 600 "${path}"`,
     unsupportedLang: (value, fallback) =>
       `"${value}" 언어 팩이 없어 "${fallback}"(으)로 대체합니다.`,
@@ -92,6 +109,7 @@ export const ko: LanguagePack = {
   hints: {
     runConfigInit: `\`${bin} config init\`으로 다시 만드세요.`,
     runAuthClient: `\`${bin} auth client\`로 먼저 등록하세요.`,
+    runIssueToken: `\`${bin} auth issue-token\`을 먼저 실행하세요.`,
   },
   errors: {
     unsupportedLang: (value, supported) =>

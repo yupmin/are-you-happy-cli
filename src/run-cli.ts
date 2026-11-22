@@ -11,6 +11,7 @@ import { loadConfig } from "./settings/config-file";
 import { loadDotenv } from "./settings/dotenv";
 import { resolvePaths } from "./settings/paths";
 import { resolveSettings } from "./settings/resolve";
+import { isValidTimeZone } from "./timezone";
 
 /** The CLI as a function: parse `argv`, talk to the world only through `io`, return the exit code. */
 export async function runCli(argv: string[], io: Io): Promise<number> {
@@ -40,7 +41,10 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const t = packs[lang];
   const out = new Output(io, format, t.label);
   if (lang !== requested) out.warn(t.warnings.unsupportedLang(requested, lang));
-  const ctx: Ctx = { io, t, lang, out, settings, paths, config, dotenv };
+  const timezone = resolveTimeZone(settings.TIMEZONE?.value, io, (value, fallback) =>
+    out.warn(t.warnings.invalidTimezone(value, fallback)),
+  );
+  const ctx: Ctx = { io, t, lang, out, settings, paths, config, dotenv, timezone };
   const sink: OutputSink = { stdout: "", stderr: "" };
 
   try {
@@ -54,6 +58,17 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
     if (pre.verbose) io.stderr.write(`${err instanceof Error ? err.stack : String(err)}\n`);
     return out.failure(500, t.errors.unexpected, pre.verbose ? undefined : t.errors.rerunVerbose);
   }
+}
+
+function resolveTimeZone(
+  requested: string | undefined,
+  io: Io,
+  onInvalid: (value: string, fallback: string) => void,
+): string {
+  const fallback = io.systemTimeZone();
+  if (requested === undefined || isValidTimeZone(requested)) return requested ?? fallback;
+  onInvalid(requested, fallback);
+  return fallback;
 }
 
 function commanderResult(err: CommanderError, { out, t }: Ctx, sink: OutputSink): number {

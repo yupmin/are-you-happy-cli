@@ -18,6 +18,8 @@ export interface Ctx {
   config: ConfigLoad;
   /** The cwd .env as found at startup. */
   dotenv: DotenvLoad;
+  /** Validated IANA time zone used for every displayed time. */
+  timezone: string;
   /** Set by the command that ran; rendered once after parsing. */
   result?: Success;
 }
