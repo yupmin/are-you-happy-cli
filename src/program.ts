@@ -1,5 +1,6 @@
 import { Command, Option } from "@commander-js/extra-typings";
 import pkg from "../package.json" with { type: "json" };
+import { registerConfig } from "./commands/config";
 import type { Ctx } from "./context";
 import { FORMATS } from "./output";
 import { BIN_NAME } from "./project";
@@ -18,6 +19,8 @@ export function buildProgram(ctx: Ctx, sink: OutputSink) {
     .helpCommand("help [command]", t.program.helpCommand)
     .addOption(new Option("--format <format>", t.program.format).choices(FORMATS))
     .option("--verbose", t.program.verbose)
+    .option("--lang <lang>", t.program.lang)
+    .option("--timezone <timezone>", t.program.timezone)
     .exitOverride()
     .configureOutput({
       writeOut: (s) => {
@@ -30,7 +33,11 @@ export function buildProgram(ctx: Ctx, sink: OutputSink) {
     .showHelpAfterError(ctx.out.format === "text")
     .addHelpText("after", t.program.examples);
 
-  program.command("config").description(t.groups.config).addHelpText("after", t.examples.config);
+  const config = program
+    .command("config")
+    .description(t.groups.config)
+    .addHelpText("after", t.examples.config);
+  registerConfig(config, ctx);
   program.command("auth").description(t.groups.auth).addHelpText("after", t.examples.auth);
   program.command("action").description(t.groups.action).addHelpText("after", t.examples.action);
 

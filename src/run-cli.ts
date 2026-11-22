@@ -7,6 +7,8 @@ import { Output } from "./output";
 import { prescan } from "./prescan";
 import { buildProgram, type OutputSink } from "./program";
 import { envKey } from "./project";
+import { loadConfig } from "./settings/config-file";
+import { resolvePaths } from "./settings/paths";
 import { resolveSettings } from "./settings/resolve";
 
 /** The CLI as a function: parse `argv`, talk to the world only through `io`, return the exit code. */
@@ -14,6 +16,8 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const pre = prescan(argv);
   const format = pre.format ?? (io.stdout.isTTY ? "text" : "json");
   // Settings are resolved before commander is built so that --help is already translated.
+  const paths = resolvePaths(io);
+  const config = loadConfig(paths.configFile);
   const settings = resolveSettings(
     [
       {
@@ -21,6 +25,10 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
         values: { [envKey("LANG")]: pre.lang, [envKey("TIMEZONE")]: pre.timezone },
       },
       { source: "shell env", values: io.env },
+      {
+        source: "config.json",
+        values: config.status === "ok" ? (config.config.ENVIRONMENTS ?? {}) : {},
+      },
     ],
     { LANG: DEFAULT_LANG, TIMEZONE: io.systemTimeZone() },
   );
@@ -29,7 +37,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const t = packs[lang];
   const out = new Output(io, format, t.label);
   if (lang !== requested) out.warn(t.warnings.unsupportedLang(requested, lang));
-  const ctx: Ctx = { io, t, lang, out, settings };
+  const ctx: Ctx = { io, t, lang, out, settings, paths, config };
   const sink: OutputSink = { stdout: "", stderr: "" };
 
   try {

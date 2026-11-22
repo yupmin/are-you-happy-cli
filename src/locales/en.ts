@@ -1,11 +1,14 @@
 import { BIN_NAME as bin } from "../project";
 
 export const en = {
+  meta: { name: "English" },
   label: { warning: "Warning:", error: "Error:", hint: "Hint:" },
   program: {
     description: "Ask a virtual API how someone feels. A sample CLI for Agent Skills.",
     format: "output format (default: text on a TTY, json otherwise)",
     verbose: "print stack traces for unexpected errors",
+    lang: "language (overrides ARE_YOU_HAPPY_CLI_LANG)",
+    timezone: "IANA time zone (overrides ARE_YOU_HAPPY_CLI_TIMEZONE)",
     version: "print the version",
     help: "display help",
     helpCommand: "display help for a command",
@@ -46,11 +49,32 @@ Examples:
 For agents:
   $ ${bin} action are-you Minsu --format json`,
   },
+  common: {
+    overwrite: "A value already exists. Overwrite it?",
+    cancelled: "Cancelled. Nothing was changed.",
+  },
+  config: {
+    init: {
+      description: "choose a language and time zone and save them to the Config File",
+      language: "Language",
+      timezone: "Time zone",
+      timezoneSystem: (tz: string) => `Use the system time zone (${tz})`,
+      timezoneCustom: "Enter one",
+      timezoneInput: "IANA time zone (e.g. Asia/Seoul)",
+      confirmSave: (path: string) => `Save to ${path}?`,
+      saved: (path: string) => `Saved the Config File: ${path}`,
+      needFlags: "Not a TTY: pass both --lang and --timezone.",
+    },
+  },
   warnings: {
+    overwritten: (path: string) => `Overwrote the existing ${path}.`,
     unsupportedLang: (value: string, fallback: string) =>
       `No Language Pack for "${value}"; falling back to "${fallback}".`,
   },
   errors: {
+    unsupportedLang: (value: string, supported: string) =>
+      `Unsupported language "${value}". Choose one of: ${supported}.`,
+    invalidTimezone: (value: string) => `Invalid time zone "${value}".`,
     subcommandRequired: "A subcommand is required.",
     unexpected: "An unexpected error occurred.",
     rerunVerbose: "Run again with --verbose to see the stack trace.",

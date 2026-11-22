@@ -69,3 +69,31 @@ describe("httpStatusToExitCode", () => {
     expect(httpStatusToExitCode(status)).toBe(code);
   });
 });
+
+describe("unexpected errors (bugs)", () => {
+  // Config dir path is occupied by a regular file → fs throws an unexpected error.
+  const broken = async (extra: string[]) => {
+    const { writeFileSync } = await import("node:fs");
+    const { join } = await import("node:path");
+    const { tempDir } = await import("./helpers");
+    const xdg = tempDir();
+    writeFileSync(join(xdg, "are-you-happy-cli"), "not a dir");
+    return run(["config", "init", "--lang", "en", "--timezone", "UTC", ...extra], {
+      env: { XDG_CONFIG_HOME: xdg },
+    });
+  };
+
+  it("exit 1 with a --verbose hint and no stack", async () => {
+    const r = await broken(["--format", "text"]);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toContain("--verbose");
+    expect(r.stderr).not.toMatch(/\n\s+at /);
+  });
+
+  it("--verbose prints the stack trace to stderr, envelope stays on stdout", async () => {
+    const r = await broken(["--verbose"]);
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toMatch(/\n\s+at /);
+    expect(r.json()).toMatchObject({ code: 500, data: null });
+  });
+});
