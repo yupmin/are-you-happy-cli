@@ -10,7 +10,7 @@ function dirs(dotenv?: string) {
   const home = tempDir();
   const cwd = tempDir();
   if (dotenv !== undefined) writeFileSync(join(cwd, ".env"), dotenv, { mode: 0o600 });
-  const tokenFile = join(home, ".are-you-happy-cli", "are-you-happy-cli-state-dir", "token.json");
+  const tokenFile = join(home, ".are-you-happy-cli", "token-dir", "token.json");
   return { home, cwd, tokenFile };
 }
 

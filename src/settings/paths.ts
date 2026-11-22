@@ -13,7 +13,8 @@ export interface Paths {
 export function resolvePaths(io: Io): Paths {
   const xdg = io.env.XDG_CONFIG_HOME;
   const configDir = xdg ? join(xdg, PROJECT_KEYWORD) : join(io.homedir, `.${PROJECT_KEYWORD}`);
-  const tokenDir = join(configDir, `${PROJECT_KEYWORD}-state-dir`);
+  // <config-dir>/<subject>-dir/<subject>.json
+  const tokenDir = join(configDir, "token-dir");
   return {
     configDir,
     configFile: join(configDir, "config.json"),

@@ -28,10 +28,7 @@ npx are-you-happy-cli config init --lang ko --timezone Asia/Seoul
 #    샘플 값: ID happy-client / SECRET happy-secret
 npx are-you-happy-cli auth client
 
-# 3. Access Token 발급 (Token State 저장)
-npx are-you-happy-cli auth issue-token
-
-# 4. Mood 확인
+# 3. Mood 확인 (Access Token이 없으면 자동 발급, 유효한 동안 재사용)
 npx are-you-happy-cli action are-you 민수
 # 민수는 행복해
 ```
@@ -49,7 +46,7 @@ npx are-you-happy-cli action are-you 민수
 | `auth purge-token` | Token State 삭제 |
 | `action are-you <name>` | (Sample Action) 무작위 Mood와 설정 타임존 기준 시각 반환. Config File이 없으면 `400` |
 
-`action`은 만료된 Access Token을 Refresh Token으로 자동 갱신하고, Token State의 Client ID가 현재 `.env`와 다르면 재발급합니다(cwd에 `.env`가 없으면 저장된 토큰을 그대로 씁니다). 이때 경고가 함께 출력됩니다.
+`action`은 Token State가 없으면 Access Token을 자동 발급하고(유효한 동안은 재사용), 만료된 Access Token을 Refresh Token으로 자동 갱신하고, Token State의 Client ID가 현재 `.env`와 다르면 재발급합니다(cwd에 `.env`가 없으면 저장된 토큰을 그대로 씁니다). 이때 경고가 함께 출력됩니다.
 
 ## 설정 우선순위
 
@@ -67,7 +64,7 @@ npx are-you-happy-cli action are-you 민수
 |---|---|---|
 | Config File | `$XDG_CONFIG_HOME/are-you-happy-cli/config.json`, 없으면 `~/.are-you-happy-cli/config.json` | 파일 600 / 폴더 700 |
 | Client Credentials | CLI를 실행한 폴더(cwd)의 `.env`만 (상위 폴더 탐색 안 함) | 600 |
-| Token State | `<config-dir>/are-you-happy-cli-state-dir/token.json` | 600 |
+| Token State | `<config-dir>/token-dir/token.json` | 600 |
 
 Config File 예:
 

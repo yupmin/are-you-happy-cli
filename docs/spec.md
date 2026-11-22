@@ -20,7 +20,7 @@ Agent Skill에서 호출하는 CLI 샘플. 가상 API(are.you.happy.cli)에 **Ac
 |---|---|---|
 | Config File | `$XDG_CONFIG_HOME/are-you-happy-cli/config.json`, 없으면 `~/.are-you-happy-cli/config.json` | 파일 600 / 폴더 700 |
 | Client Credentials | CLI 실행 폴더(cwd)의 `.env`만 — 상위 탐색 안 함 | 600 |
-| Token State | `<config-dir>/are-you-happy-cli-state-dir/token.json` | 600 |
+| Token State | `<config-dir>/token-dir/token.json` (`<subject>-dir/<subject>.json` 규칙) | 600 |
 
 Config File 형식:
 
@@ -77,7 +77,7 @@ Config File 형식:
 
 ### 토큰 흐름 (action 실행 시)
 
-1. Token State 없음 → `401` + "`auth issue-token`을 먼저 실행하라"
+1. Token State 없음 → Client Credentials로 자동 발급 + 경고 (Client Credentials도 없으면 `401` + `auth client` 안내). 유효한 Token State는 TTL 동안 재사용
 2. 저장된 `clientId` ≠ 현재 `.env`의 Client ID → 무효로 취급
 3. 만료 → Refresh Token으로 갱신 → 실패 시 Client Credentials로 재발급 → 실패 시 `401`
 

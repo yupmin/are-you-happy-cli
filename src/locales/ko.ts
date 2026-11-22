@@ -122,7 +122,7 @@ export const ko: LanguagePack = {
     },
   },
   token: {
-    missing: "Token State가 없습니다.",
+    issued: "Token State가 없어 Access Token을 새로 발급했습니다.",
     invalid: "Token State가 올바르지 않습니다.",
     rejected: "API가 Access Token을 거부했습니다.",
     refreshed: "Access Token이 만료되어 갱신했습니다.",

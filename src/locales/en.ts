@@ -113,7 +113,7 @@ For agents:
     },
   },
   token: {
-    missing: "No Token State found.",
+    issued: "No Token State found; issued a new Access Token.",
     invalid: "The Token State is not valid.",
     rejected: "The API rejected the Access Token.",
     refreshed: "The Access Token had expired; refreshed it.",

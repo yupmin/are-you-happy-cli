@@ -20,7 +20,7 @@ async function readyUser(opts: { lang?: string; tz?: string; token?: boolean } =
     { mode: 0o600 },
   );
   if (opts.token !== false) await run(["auth", "issue-token"], base);
-  const tokenFile = join(home, ".are-you-happy-cli", "are-you-happy-cli-state-dir", "token.json");
+  const tokenFile = join(home, ".are-you-happy-cli", "token-dir", "token.json");
   const token = () => JSON.parse(readFileSync(tokenFile, "utf8"));
   const setToken = (patch: Record<string, string>) =>
     writeFileSync(tokenFile, JSON.stringify({ ...token(), ...patch }));
@@ -74,12 +74,26 @@ describe("action are-you", () => {
     expect(r.json().message).toContain("config init");
   });
 
-  it("no Token State → 401 / exit 3 telling to run auth issue-token", async () => {
+  it("no Token State → issues one automatically, then reuses it within the TTL", async () => {
     const u = await readyUser({ token: false });
+    const first = await u.areYou("Minsu");
+    expect(first.exitCode).toBe(0);
+    expect(first.json().data.warnings).toEqual([expect.stringMatching(/issued/i)]);
+    const issued = u.token();
+    expect(issued).toMatchObject({ clientId: "happy-client", accessToken: "it.me.and.you" });
+
+    const second = await u.areYou("Minsu", { now: new Date(NOW.getTime() + 30 * 60_000) });
+    expect(second.exitCode).toBe(0);
+    expect(second.json().data.warnings ?? []).toEqual([]);
+    expect(u.token()).toEqual(issued);
+  });
+
+  it("no Token State and no Client Credentials → 401 pointing at auth client", async () => {
+    const u = await readyUser({ token: false });
+    writeFileSync(join(u.cwd, ".env"), "");
     const r = await u.areYou("Minsu");
     expect(r.exitCode).toBe(3);
-    expect(r.json().code).toBe(401);
-    expect(r.json().message).toContain("auth issue-token");
+    expect(r.json().message).toContain("auth client");
   });
 
   it("tampered Access Token → 401 / exit 3", async () => {
