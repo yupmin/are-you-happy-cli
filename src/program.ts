@@ -1,5 +1,6 @@
 import { Command, Option } from "@commander-js/extra-typings";
 import pkg from "../package.json" with { type: "json" };
+import { registerAction } from "./commands/action";
 import { registerAuth } from "./commands/auth";
 import { registerConfig } from "./commands/config";
 import type { Ctx } from "./context";
@@ -44,7 +45,11 @@ export function buildProgram(ctx: Ctx, sink: OutputSink) {
     .description(t.groups.auth)
     .addHelpText("after", t.examples.auth);
   registerAuth(auth, ctx);
-  program.command("action").description(t.groups.action).addHelpText("after", t.examples.action);
+  const action = program
+    .command("action")
+    .description(t.groups.action)
+    .addHelpText("after", t.examples.action);
+  registerAction(action, ctx);
 
   return program;
 }

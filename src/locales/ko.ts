@@ -1,5 +1,15 @@
 import { BIN_NAME as bin } from "../project";
+import { topicParticle } from "../services/korean";
 import type { LanguagePack } from "./index";
+
+// SAMPLE: Mood in Korean.
+const MOODS_KO = {
+  happy: "행복해",
+  sad: "슬퍼",
+  angry: "화나",
+  excited: "신나",
+  tired: "피곤해",
+} as const;
 
 export const ko: LanguagePack = {
   meta: { name: "한국어" },
@@ -98,6 +108,21 @@ export const ko: LanguagePack = {
       none: "삭제할 Token State가 없습니다.",
     },
   },
+  action: {
+    configRequired: "설정 파일이 없습니다.",
+    // SAMPLE: action are-you 문자열.
+    areYou: {
+      description: "<name>의 기분을 API에 묻기",
+      name: "기분을 물어볼 사람",
+      message: (name, mood) => `${name}${topicParticle(name)} ${MOODS_KO[mood]}`,
+      text: (message, at) => `${message}\n${at}`,
+    },
+  },
+  token: {
+    missing: "Token State가 없습니다.",
+    invalid: "Token State가 올바르지 않습니다.",
+    rejected: "API가 Access Token을 거부했습니다.",
+  },
   warnings: {
     overwritten: (path) => `기존 ${path}을(를) 덮어썼습니다.`,
     invalidTimezone: (value, fallback) =>
@@ -110,6 +135,7 @@ export const ko: LanguagePack = {
     runConfigInit: `\`${bin} config init\`으로 다시 만드세요.`,
     runAuthClient: `\`${bin} auth client\`로 먼저 등록하세요.`,
     runIssueToken: `\`${bin} auth issue-token\`을 먼저 실행하세요.`,
+    runConfigInitFirst: `\`${bin} config init\`을 먼저 실행하세요.`,
   },
   errors: {
     unsupportedLang: (value, supported) =>

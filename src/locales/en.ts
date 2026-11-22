@@ -1,4 +1,5 @@
 import { BIN_NAME as bin } from "../project";
+import type { Mood } from "../services/api";
 
 export const en = {
   meta: { name: "English" },
@@ -97,6 +98,21 @@ For agents:
       none: "There was no Token State to delete.",
     },
   },
+  action: {
+    configRequired: "No Config File found.",
+    // SAMPLE: strings for action are-you.
+    areYou: {
+      description: "ask the API how <name> feels",
+      name: "the person to ask about",
+      message: (name: string, mood: Mood) => `${name} is ${mood}.`,
+      text: (message: string, at: string) => `${message}\n${at}`,
+    },
+  },
+  token: {
+    missing: "No Token State found.",
+    invalid: "The Token State is not valid.",
+    rejected: "The API rejected the Access Token.",
+  },
   warnings: {
     overwritten: (path: string) => `Overwrote the existing ${path}.`,
     invalidTimezone: (value: string, fallback: string) =>
@@ -109,6 +125,7 @@ For agents:
     runConfigInit: `Recreate it with \`${bin} config init\`.`,
     runAuthClient: `Register them with \`${bin} auth client\`.`,
     runIssueToken: `Run \`${bin} auth issue-token\` first.`,
+    runConfigInitFirst: `Run \`${bin} config init\` first.`,
   },
   errors: {
     unsupportedLang: (value: string, supported: string) =>
