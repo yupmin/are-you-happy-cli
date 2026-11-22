@@ -66,9 +66,7 @@ export async function getAccessToken(ctx: Ctx): Promise<string> {
   const { t, io, out, paths } = ctx;
   const load = loadTokenState(paths.tokenFile);
   if (load.status === "missing") {
-    const issued = await issueAndSave(ctx);
-    out.warn(t.token.issued);
-    return issued.accessToken;
+    return issueWithWarning(ctx, readClientCredentials(ctx), t.token.issued);
   }
   if (load.status === "invalid") throw new CliError(400, t.token.invalid, t.hints.runIssueToken);
   warnIfTooOpen(ctx, paths.tokenFile);
@@ -76,9 +74,7 @@ export async function getAccessToken(ctx: Ctx): Promise<string> {
   const { state } = load;
   const creds = readClientCredentials(ctx);
   if (creds && creds.clientId !== state.clientId) {
-    const issued = await issueAndSave(ctx, creds);
-    out.warn(t.token.clientChanged);
-    return issued.accessToken;
+    return issueWithWarning(ctx, creds, t.token.clientChanged);
   }
   if (!isExpired(state, io.now())) return state.accessToken;
 
@@ -90,8 +86,13 @@ export async function getAccessToken(ctx: Ctx): Promise<string> {
   } catch (err) {
     if (!(err instanceof ApiError)) throw err;
   }
+  return issueWithWarning(ctx, creds, t.token.reissued);
+}
+
+/** Issues a new Access Token, saves it and warns why. */
+async function issueWithWarning(ctx: Ctx, creds: ClientCredentials | undefined, why: string) {
   const issued = await issueAndSave(ctx, creds);
-  out.warn(t.token.reissued);
+  ctx.out.warn(why);
   return issued.accessToken;
 }
 

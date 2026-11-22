@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { type RunOptions, run, tempDir } from "./helpers";
@@ -79,6 +79,8 @@ describe("action are-you", () => {
     const first = await u.areYou("Minsu");
     expect(first.exitCode).toBe(0);
     expect(first.json().data.warnings).toEqual([expect.stringMatching(/issued/i)]);
+    expect(statSync(join(u.tokenFile, "..")).mode & 0o777).toBe(0o700);
+    expect(statSync(u.tokenFile).mode & 0o777).toBe(0o600);
     const issued = u.token();
     expect(issued).toMatchObject({ clientId: "happy-client", accessToken: "it.me.and.you" });
 
@@ -88,13 +90,20 @@ describe("action are-you", () => {
     expect(u.token()).toEqual(issued);
   });
 
-  it("no Token State and no Client Credentials → 401 pointing at auth client", async () => {
-    const u = await readyUser({ token: false });
-    writeFileSync(join(u.cwd, ".env"), "");
-    const r = await u.areYou("Minsu");
-    expect(r.exitCode).toBe(3);
-    expect(r.json().message).toContain("auth client");
-  });
+  it.each([
+    ["empty .env", (cwd: string) => writeFileSync(join(cwd, ".env"), "")],
+    ["no .env", (cwd: string) => rmSync(join(cwd, ".env"))],
+  ])(
+    "no Token State and no Client Credentials (%s) → 401 pointing at auth client",
+    async (_, setup) => {
+      const u = await readyUser({ token: false });
+      setup(u.cwd);
+      const r = await u.areYou("Minsu");
+      expect(r.exitCode).toBe(3);
+      expect(r.json()).toMatchObject({ code: 401, data: null });
+      expect(r.json().message).toContain("auth client");
+    },
+  );
 
   it("tampered Access Token → 401 / exit 3", async () => {
     const u = await readyUser();
