@@ -58,13 +58,18 @@ export async function issueAndSave(
 
 /**
  * The Access Token to call the API with. Read only from the Token State, never from env.
+ * No Token State → issue one; a valid one is reused until its TTL runs out.
  * A Token State for another Client ID than the cwd .env → re-issue (no .env → nothing to compare).
  * Expired → refresh, then re-issue.
  */
 export async function getAccessToken(ctx: Ctx): Promise<string> {
   const { t, io, out, paths } = ctx;
   const load = loadTokenState(paths.tokenFile);
-  if (load.status === "missing") throw new CliError(401, t.token.missing, t.hints.runIssueToken);
+  if (load.status === "missing") {
+    const issued = await issueAndSave(ctx);
+    out.warn(t.token.issued);
+    return issued.accessToken;
+  }
   if (load.status === "invalid") throw new CliError(400, t.token.invalid, t.hints.runIssueToken);
   warnIfTooOpen(ctx, paths.tokenFile);
 

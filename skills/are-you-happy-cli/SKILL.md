@@ -47,7 +47,7 @@ Exit codes:
 | `auth purge-token` | Deletes the Token State. |
 | `action are-you <name>` | Returns `data: { name, mood, message, checkedAt }`. `mood` ∈ `happy\|sad\|angry\|excited\|tired`. `message` is localized (en/ko). |
 
-`action are-you` refreshes an expired Access Token automatically, and reissues the token when the Client ID in `.env` changed since issue. Either case shows up in `data.warnings`; no action needed.
+`action are-you` issues an Access Token automatically when there is no Token State (and reuses it until it expires), refreshes an expired one, and reissues the token when the Client ID in `.env` changed since issue. Each case shows up in `data.warnings`; no action needed.
 
 ## Recovery
 
@@ -59,7 +59,7 @@ Apply at most one recovery step per failure, then retry the original command onc
 | `400` "Config File is not valid" | Same as above (recreates it). |
 | `400` "Token State is not valid" | Run `auth issue-token --format json` once, then retry. |
 | `401` and `message` mentions `auth client` (no Client Credentials) | Ask the user to run `! npx are-you-happy-cli auth client` themselves in the prompt, then retry. |
-| `401` otherwise (no/invalid Token State, token rejected) | Run `auth issue-token --format json` once, then retry. If it still fails, stop and tell the user. |
+| `401` otherwise (token rejected) | Run `auth issue-token --format json` once, then retry. If it still fails, stop and tell the user. |
 | `500` | Rerun once with `--verbose`, report the stack trace to the user. |
 
 Never ask the user to paste the Client Secret (or any token) into chat. Credentials go in only via `auth client`, typed by the user.
