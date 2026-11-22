@@ -112,6 +112,9 @@ For agents:
     missing: "No Token State found.",
     invalid: "The Token State is not valid.",
     rejected: "The API rejected the Access Token.",
+    refreshed: "The Access Token had expired; refreshed it.",
+    reissued: "Refreshing the Access Token failed; re-issued it with the Client Credentials.",
+    clientChanged: "The Token State was issued for a different Client ID; re-issued it.",
   },
   warnings: {
     overwritten: (path: string) => `Overwrote the existing ${path}.`,

@@ -122,6 +122,9 @@ export const ko: LanguagePack = {
     missing: "Token State가 없습니다.",
     invalid: "Token State가 올바르지 않습니다.",
     rejected: "API가 Access Token을 거부했습니다.",
+    refreshed: "Access Token이 만료되어 갱신했습니다.",
+    reissued: "Access Token 갱신에 실패해 Client Credentials로 재발급했습니다.",
+    clientChanged: "Token State가 다른 Client ID로 발급되어 재발급했습니다.",
   },
   warnings: {
     overwritten: (path) => `기존 ${path}을(를) 덮어썼습니다.`,
