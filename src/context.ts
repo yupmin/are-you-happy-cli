@@ -2,6 +2,7 @@ import type { Io } from "./io";
 import type { Lang, LanguagePack } from "./locales";
 import type { Output, Success } from "./output";
 import type { ConfigLoad } from "./settings/config-file";
+import type { DotenvLoad } from "./settings/dotenv";
 import type { Paths } from "./settings/paths";
 import type { Settings } from "./settings/resolve";
 
@@ -15,6 +16,8 @@ export interface Ctx {
   paths: Paths;
   /** The Config File as found at startup. */
   config: ConfigLoad;
+  /** The cwd .env as found at startup. */
+  dotenv: DotenvLoad;
   /** Set by the command that ran; rendered once after parsing. */
   result?: Success;
 }

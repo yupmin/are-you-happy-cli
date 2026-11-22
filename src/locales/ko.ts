@@ -66,16 +66,28 @@ export const ko: LanguagePack = {
       saved: (path) => `설정 파일을 저장했습니다: ${path}`,
       needFlags: "TTY가 아니므로 --lang과 --timezone을 모두 지정하세요.",
     },
+    show: {
+      description: "각 설정의 최종 값과 출처 표시",
+      fileOnly: "파일 전용 설정",
+      none: "(없음)",
+    },
   },
   warnings: {
     overwritten: (path) => `기존 ${path}을(를) 덮어썼습니다.`,
+    tooOpen: (path) => `${path}을(를) 다른 사용자가 읽을 수 있습니다. 실행: chmod 600 "${path}"`,
     unsupportedLang: (value, fallback) =>
       `"${value}" 언어 팩이 없어 "${fallback}"(으)로 대체합니다.`,
+  },
+  hints: {
+    runConfigInit: `\`${bin} config init\`으로 다시 만드세요.`,
+    runAuthClient: `\`${bin} auth client\`로 먼저 등록하세요.`,
   },
   errors: {
     unsupportedLang: (value, supported) =>
       `지원하지 않는 언어 "${value}"입니다. 다음 중에서 고르세요: ${supported}.`,
     invalidTimezone: (value) => `잘못된 타임존 "${value}"입니다.`,
+    configInvalid: (path) => `설정 파일이 올바르지 않습니다: ${path}`,
+    dotenvInvalid: (path) => `.env 파일이 올바르지 않습니다: ${path}`,
     subcommandRequired: "하위 명령이 필요합니다.",
     unexpected: "예상치 못한 오류가 발생했습니다.",
     rerunVerbose: "--verbose 옵션으로 다시 실행하면 stack trace를 볼 수 있습니다.",

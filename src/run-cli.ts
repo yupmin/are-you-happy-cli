@@ -8,6 +8,7 @@ import { prescan } from "./prescan";
 import { buildProgram, type OutputSink } from "./program";
 import { envKey } from "./project";
 import { loadConfig } from "./settings/config-file";
+import { loadDotenv } from "./settings/dotenv";
 import { resolvePaths } from "./settings/paths";
 import { resolveSettings } from "./settings/resolve";
 
@@ -18,6 +19,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   // Settings are resolved before commander is built so that --help is already translated.
   const paths = resolvePaths(io);
   const config = loadConfig(paths.configFile);
+  const dotenv = loadDotenv(paths.envFile);
   const settings = resolveSettings(
     [
       {
@@ -25,6 +27,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
         values: { [envKey("LANG")]: pre.lang, [envKey("TIMEZONE")]: pre.timezone },
       },
       { source: "shell env", values: io.env },
+      { source: ".env", values: dotenv.status === "ok" ? dotenv.values : {} },
       {
         source: "config.json",
         values: config.status === "ok" ? (config.config.ENVIRONMENTS ?? {}) : {},
@@ -37,7 +40,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const t = packs[lang];
   const out = new Output(io, format, t.label);
   if (lang !== requested) out.warn(t.warnings.unsupportedLang(requested, lang));
-  const ctx: Ctx = { io, t, lang, out, settings, paths, config };
+  const ctx: Ctx = { io, t, lang, out, settings, paths, config, dotenv };
   const sink: OutputSink = { stdout: "", stderr: "" };
 
   try {

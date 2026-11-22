@@ -65,16 +65,28 @@ For agents:
       saved: (path: string) => `Saved the Config File: ${path}`,
       needFlags: "Not a TTY: pass both --lang and --timezone.",
     },
+    show: {
+      description: "show every setting with its final value and where it came from",
+      fileOnly: "File-only Settings",
+      none: "(none)",
+    },
   },
   warnings: {
     overwritten: (path: string) => `Overwrote the existing ${path}.`,
+    tooOpen: (path: string) => `${path} is readable by others; run: chmod 600 "${path}"`,
     unsupportedLang: (value: string, fallback: string) =>
       `No Language Pack for "${value}"; falling back to "${fallback}".`,
+  },
+  hints: {
+    runConfigInit: `Recreate it with \`${bin} config init\`.`,
+    runAuthClient: `Register them with \`${bin} auth client\`.`,
   },
   errors: {
     unsupportedLang: (value: string, supported: string) =>
       `Unsupported language "${value}". Choose one of: ${supported}.`,
     invalidTimezone: (value: string) => `Invalid time zone "${value}".`,
+    configInvalid: (path: string) => `The Config File is not valid: ${path}`,
+    dotenvInvalid: (path: string) => `The .env file is not valid: ${path}`,
     subcommandRequired: "A subcommand is required.",
     unexpected: "An unexpected error occurred.",
     rerunVerbose: "Run again with --verbose to see the stack trace.",
