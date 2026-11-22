@@ -19,7 +19,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
-    "prepack": "npm run build"
+    "prepack": "npm run build",
+    "prepare": "simple-git-hooks"
   },
   "license": "MIT",
   "dependencies": {
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.6.8",
     "@types/node": "^26.6.6",
+    "simple-git-hooks": "^2.14.0",
     "tsup": "^9.0.0",
     "typescript": "^7.0.2",
     "vitest": "^5.1.1"
@@ -39,5 +41,8 @@
     "cli",
     "agent-skill",
     "template"
-  ]
+  ],
+  "simple-git-hooks": {
+    "pre-commit": "npx biome check --staged --no-errors-on-unmatched && npm run typecheck"
+  }
 }
