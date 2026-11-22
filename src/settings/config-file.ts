@@ -1,5 +1,8 @@
 import { z } from "zod";
-import { readIfExists, writePrivateFile } from "./private-file";
+import { CliError } from "../errors";
+import type { LanguagePack } from "../locales";
+import { writePrivateFile } from "./private-file";
+import { PrivateFileStore, type StoreEnv } from "./store";
 
 // ENVIRONMENTS holds Environment Settings; every other key is a File-only Setting.
 export const ConfigSchema = z
@@ -8,22 +11,44 @@ export const ConfigSchema = z
 
 export type Config = z.infer<typeof ConfigSchema>;
 
-export type ConfigLoad =
-  | { status: "missing" }
-  | { status: "invalid" }
-  | { status: "ok"; config: Config };
+/** The Config File, read once at startup. Its folder is created as 700 on save. */
+export class ConfigFileStore extends PrivateFileStore<Config> {
+  private readonly snapshot;
 
-export function loadConfig(path: string): ConfigLoad {
-  const text = readIfExists(path);
-  if (text === undefined) return { status: "missing" };
-  try {
-    const parsed = ConfigSchema.safeParse(JSON.parse(text));
-    return parsed.success ? { status: "ok", config: parsed.data } : { status: "invalid" };
-  } catch {
-    return { status: "invalid" };
+  constructor(
+    path: string,
+    private readonly dir: string,
+    env: StoreEnv,
+  ) {
+    super(path, env);
+    this.snapshot = this.load();
   }
-}
 
-export function saveConfig(path: string, configDir: string, config: Config): void {
-  writePrivateFile(path, `${JSON.stringify(config, null, 2)}\n`, [configDir]);
+  /** True when the file is there, even if broken. */
+  get exists(): boolean {
+    return this.snapshot.status !== "missing";
+  }
+
+  /** Lenient: the Config File if valid, otherwise undefined. For settings resolution and init. */
+  peek(): Config | undefined {
+    return this.snapshot.status === "ok" ? this.snapshot.value : undefined;
+  }
+
+  /** Strict: undefined when missing, 400 when broken, warns when too open. */
+  read(): Config | undefined {
+    return this.strict(this.snapshot);
+  }
+
+  save(config: Config): void {
+    writePrivateFile(this.path, `${JSON.stringify(config, null, 2)}\n`, [this.dir]);
+  }
+
+  protected parse(text: string): Config | undefined {
+    const parsed = ConfigSchema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : undefined;
+  }
+
+  protected brokenError(t: LanguagePack): CliError {
+    return new CliError(400, t.errors.configInvalid(this.path), t.hints.runConfigInit);
+  }
 }

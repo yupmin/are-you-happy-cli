@@ -1,15 +1,8 @@
 import type { Ctx } from "../context";
 import { CliError } from "../errors";
-import { assertDotenvReadable, warnIfTooOpen } from "../guards";
+import type { TokenState } from "../settings/token-state";
 import * as api from "./api";
-import { ApiError } from "./api";
-import {
-  isExpired,
-  loadTokenState,
-  saveTokenState,
-  type TokenState,
-  toTokenState,
-} from "./token-state";
+import { ApiError, type TokenResponse } from "./api";
 
 export interface ClientCredentials {
   clientId: string;
@@ -28,16 +21,26 @@ async function mapApiError<T>(call: () => Promise<T>, message: string, hint: str
 
 /** Client Credentials from the cwd .env (the only place they may live), if complete. */
 export function readClientCredentials(ctx: Ctx): ClientCredentials | undefined {
-  assertDotenvReadable(ctx);
-  warnIfTooOpen(ctx, ctx.paths.envFile);
+  ctx.dotenv.read(); // 400 if broken, warns if too open; values arrive via settings (.env only)
   const clientId = ctx.settings.CLIENT_ID?.value;
   const clientSecret = ctx.settings.CLIENT_SECRET?.value;
   return clientId && clientSecret ? { clientId, clientSecret } : undefined;
 }
 
+function toTokenState(res: TokenResponse, clientId: string, now: Date): TokenState {
+  return {
+    accessToken: res.accessToken,
+    refreshToken: res.refreshToken,
+    expiresAt: new Date(now.getTime() + res.expiresIn * 1000).toISOString(),
+    clientId,
+  };
+}
+
+const isExpired = (state: TokenState, now: Date): boolean =>
+  Date.parse(state.expiresAt) <= now.getTime();
+
 function save(ctx: Ctx, state: TokenState): TokenState {
-  const { paths } = ctx;
-  saveTokenState(paths.tokenFile, [paths.configDir, paths.tokenDir], state);
+  ctx.tokenState.save(state);
   return state;
 }
 
@@ -63,15 +66,10 @@ export async function issueAndSave(
  * Expired → refresh, then re-issue.
  */
 export async function getAccessToken(ctx: Ctx): Promise<string> {
-  const { t, io, out, paths } = ctx;
-  const load = loadTokenState(paths.tokenFile);
-  if (load.status === "missing") {
-    return issueWithWarning(ctx, readClientCredentials(ctx), t.token.issued);
-  }
-  if (load.status === "invalid") throw new CliError(400, t.token.invalid, t.hints.runIssueToken);
-  warnIfTooOpen(ctx, paths.tokenFile);
+  const { t, io, out } = ctx;
+  const state = ctx.tokenState.read();
+  if (!state) return issueWithWarning(ctx, readClientCredentials(ctx), t.token.issued);
 
-  const { state } = load;
   const creds = readClientCredentials(ctx);
   if (creds && creds.clientId !== state.clientId) {
     return issueWithWarning(ctx, creds, t.token.clientChanged);

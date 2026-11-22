@@ -7,10 +7,12 @@ import { Output } from "./output";
 import { prescan } from "./prescan";
 import { buildProgram, type OutputSink } from "./program";
 import { envKey } from "./project";
-import { loadConfig } from "./settings/config-file";
-import { loadDotenv } from "./settings/dotenv";
+import { ConfigFileStore } from "./settings/config-file";
+import { DotenvStore } from "./settings/dotenv";
 import { resolvePaths } from "./settings/paths";
 import { resolveSettings } from "./settings/resolve";
+import type { StoreEnv } from "./settings/store";
+import { TokenStateStore } from "./settings/token-state";
 import { isValidTimeZone } from "./timezone";
 
 /** The CLI as a function: parse `argv`, talk to the world only through `io`, return the exit code. */
@@ -19,8 +21,14 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const format = pre.format ?? (io.stdout.isTTY ? "text" : "json");
   // Settings are resolved before commander is built so that --help is already translated.
   const paths = resolvePaths(io);
-  const config = loadConfig(paths.configFile);
-  const dotenv = loadDotenv(paths.envFile);
+  let storeEnv: ReturnType<StoreEnv> | undefined;
+  const env: StoreEnv = () => {
+    if (!storeEnv) throw new Error("a store was read strictly before the Language Pack was chosen");
+    return storeEnv;
+  };
+  const config = new ConfigFileStore(paths.configFile, paths.configDir, env);
+  const dotenv = new DotenvStore(paths.envFile, env);
+  const tokenState = new TokenStateStore(paths.tokenFile, [paths.configDir, paths.tokenDir], env);
   const settings = resolveSettings(
     [
       {
@@ -28,11 +36,8 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
         values: { [envKey("LANG")]: pre.lang, [envKey("TIMEZONE")]: pre.timezone },
       },
       { source: "shell env", values: io.env },
-      { source: ".env", values: dotenv.status === "ok" ? dotenv.values : {} },
-      {
-        source: "config.json",
-        values: config.status === "ok" ? (config.config.ENVIRONMENTS ?? {}) : {},
-      },
+      { source: ".env", values: dotenv.peek() ?? {} },
+      { source: "config.json", values: config.peek()?.ENVIRONMENTS ?? {} },
     ],
     { LANG: DEFAULT_LANG, TIMEZONE: io.systemTimeZone() },
   );
@@ -40,6 +45,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const lang = isLang(requested) ? requested : DEFAULT_LANG;
   const t = packs[lang];
   const out = new Output(io, format, t.label);
+  storeEnv = { t, warn: (message) => out.warn(message) };
   // An invalid flag is a usage error; an invalid env/config value falls back with a warning.
   if (pre.lang !== undefined && !isLang(pre.lang)) {
     return out.failure(400, t.errors.unsupportedLang(pre.lang, LANGUAGES.join(", ")));
@@ -51,7 +57,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const timezone = resolveTimeZone(settings.TIMEZONE?.value, io, (value, fallback) =>
     out.warn(t.warnings.invalidTimezone(value, fallback)),
   );
-  const ctx: Ctx = { io, t, lang, out, settings, paths, config, dotenv, timezone };
+  const ctx: Ctx = { io, t, lang, out, settings, config, dotenv, tokenState, timezone };
   const sink: OutputSink = { stdout: "", stderr: "" };
 
   try {

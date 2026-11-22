@@ -1,7 +1,6 @@
 import type { Command } from "@commander-js/extra-typings";
 import type { Ctx } from "../context";
 import { CliError } from "../errors";
-import { assertConfigReadable, warnIfTooOpen } from "../guards";
 import * as api from "../services/api";
 import { callWithAccessToken } from "../services/token-flow";
 import { formatIsoInTimeZone } from "../time";
@@ -9,12 +8,10 @@ import { formatIsoInTimeZone } from "../time";
 export function registerAction(group: Command, ctx: Ctx): void {
   // Shared guard for every action command, including ones added later.
   group.hook("preAction", () => {
-    const { config, t, paths } = ctx;
-    if (config.status === "missing") {
+    const { config, t } = ctx;
+    if (config.read() === undefined) {
       throw new CliError(400, t.action.configRequired, t.hints.runConfigInitFirst);
     }
-    assertConfigReadable(ctx);
-    warnIfTooOpen(ctx, paths.configFile);
   });
 
   // SAMPLE: delete this command when turning the template into another CLI.
