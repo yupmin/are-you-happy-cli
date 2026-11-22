@@ -22,6 +22,34 @@ For agents:
     auth: "manage Client Credentials and the Access Token",
     action: "sample actions that call the API",
   },
+  examples: {
+    config: `
+Examples:
+  $ ${bin} config init
+  $ ${bin} config init --lang ko --timezone Asia/Seoul
+  $ ${bin} config show
+
+For agents:
+  $ ${bin} config show --format json`,
+    auth: `
+Examples:
+  $ ${bin} auth client
+  $ ${bin} auth issue-token
+  $ ${bin} auth purge-token
+
+For agents:
+  $ ${bin} auth issue-token --format json`,
+    action: `
+Examples:
+  $ ${bin} action are-you Minsu
+
+For agents:
+  $ ${bin} action are-you Minsu --format json`,
+  },
+  warnings: {
+    unsupportedLang: (value: string, fallback: string) =>
+      `No Language Pack for "${value}"; falling back to "${fallback}".`,
+  },
   errors: {
     subcommandRequired: "A subcommand is required.",
     unexpected: "An unexpected error occurred.",

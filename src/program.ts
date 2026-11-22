@@ -30,9 +30,9 @@ export function buildProgram(ctx: Ctx, sink: OutputSink) {
     .showHelpAfterError(ctx.out.format === "text")
     .addHelpText("after", t.program.examples);
 
-  program.command("config").description(t.groups.config);
-  program.command("auth").description(t.groups.auth);
-  program.command("action").description(t.groups.action);
+  program.command("config").description(t.groups.config).addHelpText("after", t.examples.config);
+  program.command("auth").description(t.groups.auth).addHelpText("after", t.examples.auth);
+  program.command("action").description(t.groups.action).addHelpText("after", t.examples.action);
 
   return program;
 }

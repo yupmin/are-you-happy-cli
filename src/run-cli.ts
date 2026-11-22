@@ -2,19 +2,34 @@ import { CommanderError } from "@commander-js/extra-typings";
 import type { Ctx } from "./context";
 import { CliError, EXIT_INTERRUPTED, isPromptExit } from "./errors";
 import type { Io } from "./io";
-import { DEFAULT_LANG, packs } from "./locales";
+import { DEFAULT_LANG, isLang, packs } from "./locales";
 import { Output } from "./output";
 import { prescan } from "./prescan";
 import { buildProgram, type OutputSink } from "./program";
+import { envKey } from "./project";
+import { resolveSettings } from "./settings/resolve";
 
 /** The CLI as a function: parse `argv`, talk to the world only through `io`, return the exit code. */
 export async function runCli(argv: string[], io: Io): Promise<number> {
   const pre = prescan(argv);
   const format = pre.format ?? (io.stdout.isTTY ? "text" : "json");
-  const lang = DEFAULT_LANG;
+  // Settings are resolved before commander is built so that --help is already translated.
+  const settings = resolveSettings(
+    [
+      {
+        source: "flag",
+        values: { [envKey("LANG")]: pre.lang, [envKey("TIMEZONE")]: pre.timezone },
+      },
+      { source: "shell env", values: io.env },
+    ],
+    { LANG: DEFAULT_LANG, TIMEZONE: io.systemTimeZone() },
+  );
+  const requested = settings.LANG?.value ?? DEFAULT_LANG;
+  const lang = isLang(requested) ? requested : DEFAULT_LANG;
   const t = packs[lang];
   const out = new Output(io, format, t.label);
-  const ctx: Ctx = { io, t, lang, out };
+  if (lang !== requested) out.warn(t.warnings.unsupportedLang(requested, lang));
+  const ctx: Ctx = { io, t, lang, out, settings };
   const sink: OutputSink = { stdout: "", stderr: "" };
 
   try {
