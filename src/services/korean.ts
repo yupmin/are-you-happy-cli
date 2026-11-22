@@ -1,3 +1,4 @@
+// SAMPLE: Korean topic particle for the Mood message.
 const HANGUL_START = 0xac00;
 const HANGUL_END = 0xd7a3;
 
