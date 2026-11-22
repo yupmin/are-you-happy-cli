@@ -23,3 +23,8 @@ export interface Ctx {
   /** Set by the command that ran; rendered once after parsing. */
   result?: Success;
 }
+
+/** The user declined a confirmation: nothing was saved. */
+export function cancel(ctx: Ctx): void {
+  ctx.result = { message: ctx.t.common.cancelled, data: { saved: false } };
+}

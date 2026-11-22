@@ -1,5 +1,5 @@
 import type { Command } from "@commander-js/extra-typings";
-import type { Ctx } from "../context";
+import { type Ctx, cancel } from "../context";
 import { CliError } from "../errors";
 import { assertDotenvReadable } from "../guards";
 import { envKey } from "../project";
@@ -65,7 +65,7 @@ async function authClient(ctx: Ctx): Promise<void> {
   if (current[CLIENT_ID_KEY] !== undefined || current[CLIENT_SECRET_KEY] !== undefined) {
     out.warn(t.auth.client.existing(paths.envFile));
     if (!(await io.prompt.confirm({ message: t.common.overwrite, default: false }))) {
-      ctx.result = { message: t.common.cancelled, data: { saved: false } };
+      cancel(ctx);
       return;
     }
   }

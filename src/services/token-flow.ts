@@ -11,13 +11,23 @@ import {
   toTokenState,
 } from "./token-state";
 
-export interface Credentials {
+export interface ClientCredentials {
   clientId: string;
   clientSecret: string;
 }
 
-/** Client Credentials from the resolved settings (shell env > cwd .env), if complete. */
-export function readCredentials(ctx: Ctx): Credentials | undefined {
+/** Runs `call`; an ApiError from the API becomes a CliError with the given message and hint. */
+async function mapApiError<T>(call: () => Promise<T>, message: string, hint: string): Promise<T> {
+  try {
+    return await call();
+  } catch (err) {
+    if (err instanceof ApiError) throw new CliError(err.status, message, hint);
+    throw err;
+  }
+}
+
+/** Client Credentials from the cwd .env (the only place they may live), if complete. */
+export function readClientCredentials(ctx: Ctx): ClientCredentials | undefined {
   assertDotenvReadable(ctx);
   warnIfTooOpen(ctx, ctx.paths.envFile);
   const clientId = ctx.settings.CLIENT_ID?.value;
@@ -32,23 +42,24 @@ function save(ctx: Ctx, state: TokenState): TokenState {
 }
 
 /** Issues a token with the Client Credentials and saves it. Throws 401 CliErrors. */
-export async function issueAndSave(ctx: Ctx, creds = readCredentials(ctx)): Promise<TokenState> {
+export async function issueAndSave(
+  ctx: Ctx,
+  creds = readClientCredentials(ctx),
+): Promise<TokenState> {
   const { t, io } = ctx;
   if (!creds) throw new CliError(401, t.auth.issueToken.noCredentials, t.hints.runAuthClient);
-  try {
-    const res = await api.issueToken(creds.clientId, creds.clientSecret);
-    return save(ctx, toTokenState(res, creds.clientId, io.now()));
-  } catch (err) {
-    if (err instanceof ApiError) {
-      throw new CliError(err.status, t.auth.issueToken.rejected, t.hints.runAuthClient);
-    }
-    throw err;
-  }
+  const res = await mapApiError(
+    () => api.issueToken(creds.clientId, creds.clientSecret),
+    t.auth.issueToken.rejected,
+    t.hints.runAuthClient,
+  );
+  return save(ctx, toTokenState(res, creds.clientId, io.now()));
 }
 
 /**
  * The Access Token to call the API with. Read only from the Token State, never from env.
- * A Token State for another Client ID is invalid → re-issue. Expired → refresh, then re-issue.
+ * A Token State for another Client ID than the cwd .env → re-issue (no .env → nothing to compare).
+ * Expired → refresh, then re-issue.
  */
 export async function getAccessToken(ctx: Ctx): Promise<string> {
   const { t, io, out, paths } = ctx;
@@ -58,8 +69,8 @@ export async function getAccessToken(ctx: Ctx): Promise<string> {
   warnIfTooOpen(ctx, paths.tokenFile);
 
   const { state } = load;
-  const creds = readCredentials(ctx);
-  if (creds?.clientId !== state.clientId) {
+  const creds = readClientCredentials(ctx);
+  if (creds && creds.clientId !== state.clientId) {
     const issued = await issueAndSave(ctx, creds);
     out.warn(t.token.clientChanged);
     return issued.accessToken;
@@ -77,4 +88,13 @@ export async function getAccessToken(ctx: Ctx): Promise<string> {
   const issued = await issueAndSave(ctx, creds);
   out.warn(t.token.reissued);
   return issued.accessToken;
+}
+
+/** Calls the API with a usable Access Token; an API rejection becomes a 401 CliError. */
+export async function callWithAccessToken<T>(
+  ctx: Ctx,
+  call: (accessToken: string) => Promise<T>,
+): Promise<T> {
+  const accessToken = await getAccessToken(ctx);
+  return mapApiError(() => call(accessToken), ctx.t.token.rejected, ctx.t.hints.runIssueToken);
 }

@@ -67,6 +67,9 @@ export const ko: LanguagePack = {
   common: {
     overwrite: "이미 값이 있습니다. 덮어쓸까요?",
     cancelled: "취소했습니다. 변경된 것은 없습니다.",
+    ok: "완료",
+    version: "버전",
+    help: "도움말",
   },
   config: {
     init: {

@@ -158,15 +158,6 @@ describe("action are-you: token recovery", () => {
     expect(u.token().clientId).toBe("happy-client");
   });
 
-  it("Client ID mismatch without usable Client Credentials → 401 pointing at auth client", async () => {
-    const u = await readyUser();
-    u.setToken({ clientId: "someone-else" });
-    writeFileSync(join(u.cwd, ".env"), "");
-    const r = await u.areYou("Minsu");
-    expect(r.exitCode).toBe(3);
-    expect(r.json().message).toContain("auth client");
-  });
-
   it("warnings go to stderr in text mode", async () => {
     const u = await readyUser();
     const r = await u.areYou("Minsu", { now: LATER, argv: ["--format", "text"] });

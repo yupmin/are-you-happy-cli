@@ -18,6 +18,9 @@ export type SettingName = (typeof SETTING_NAMES)[number];
 
 export type Settings = Record<SettingName, Resolved | undefined>;
 
+/** Client Credentials live in the cwd .env only (spec): never shell env, flags or config.json. */
+const DOTENV_ONLY: ReadonlySet<SettingName> = new Set(["CLIENT_ID", "CLIENT_SECRET"]);
+
 /** Layers are ordered highest priority first; the first non-empty value wins. */
 export function resolveSettings(
   layers: Layer[],
@@ -26,7 +29,12 @@ export function resolveSettings(
   const settings = {} as Settings;
   for (const name of SETTING_NAMES) {
     const key = envKey(name);
-    const hit = layers.find((layer) => layer.values[key] !== undefined && layer.values[key] !== "");
+    const hit = layers.find(
+      (layer) =>
+        (!DOTENV_ONLY.has(name) || layer.source === ".env") &&
+        layer.values[key] !== undefined &&
+        layer.values[key] !== "",
+    );
     const fallback = defaults[name];
     settings[name] = hit
       ? { value: hit.values[key] as string, source: hit.source }

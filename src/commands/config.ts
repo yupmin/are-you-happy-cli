@@ -1,8 +1,8 @@
 import type { Command } from "@commander-js/extra-typings";
-import type { Ctx } from "../context";
+import { type Ctx, cancel } from "../context";
 import { CliError } from "../errors";
 import { assertConfigReadable, assertDotenvReadable, warnIfTooOpen } from "../guards";
-import { isLang, LANGUAGES, type Lang, packs } from "../locales";
+import { LANGUAGES, type Lang, packs } from "../locales";
 import { envKey } from "../project";
 import { saveConfig } from "../settings/config-file";
 import { maskSetting } from "../settings/mask";
@@ -74,12 +74,6 @@ async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
   const { io, t, out, paths, config } = ctx;
   const { prompt } = io;
 
-  if (flags.lang !== undefined && !isLang(flags.lang)) {
-    throw new CliError(400, t.errors.unsupportedLang(flags.lang, LANGUAGES.join(", ")));
-  }
-  if (flags.timezone !== undefined && !isValidTimeZone(flags.timezone)) {
-    throw new CliError(400, t.errors.invalidTimezone(flags.timezone));
-  }
   if (!io.interactive && (flags.lang === undefined || flags.timezone === undefined)) {
     throw new CliError(400, t.config.init.needFlags);
   }
@@ -97,7 +91,7 @@ async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
   if (config.status !== "missing") {
     if (io.interactive) {
       if (!(await prompt.confirm({ message: t.common.overwrite, default: false }))) {
-        ctx.result = { message: t.common.cancelled, data: { saved: false } };
+        cancel(ctx);
         return;
       }
     } else {
@@ -110,7 +104,7 @@ async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
         default: true,
       }))
     ) {
-      ctx.result = { message: t.common.cancelled, data: { saved: false } };
+      cancel(ctx);
       return;
     }
   }

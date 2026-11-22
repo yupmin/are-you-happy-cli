@@ -1,4 +1,5 @@
 import { BIN_NAME as bin } from "../project";
+// SAMPLE: Mood type for the action.areYou strings.
 import type { Mood } from "../services/api";
 
 export const en = {
@@ -57,6 +58,9 @@ For agents:
   common: {
     overwrite: "A value already exists. Overwrite it?",
     cancelled: "Cancelled. Nothing was changed.",
+    ok: "OK",
+    version: "Version",
+    help: "Help",
   },
   config: {
     init: {

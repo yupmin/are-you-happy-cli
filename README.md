@@ -49,7 +49,7 @@ npx are-you-happy-cli action are-you 민수
 | `auth purge-token` | Token State 삭제 |
 | `action are-you <name>` | (Sample Action) 무작위 Mood와 설정 타임존 기준 시각 반환. Config File이 없으면 `400` |
 
-`action`은 만료된 Access Token을 Refresh Token으로 자동 갱신하고, Token State의 Client ID가 현재 `.env`와 다르면 재발급합니다. 이때 경고가 함께 출력됩니다.
+`action`은 만료된 Access Token을 Refresh Token으로 자동 갱신하고, Token State의 Client ID가 현재 `.env`와 다르면 재발급합니다(cwd에 `.env`가 없으면 저장된 토큰을 그대로 씁니다). 이때 경고가 함께 출력됩니다.
 
 ## 설정 우선순위
 
@@ -57,6 +57,8 @@ npx are-you-happy-cli action are-you 민수
 
 - 환경변수 접두사는 `ARE_YOU_HAPPY_CLI_` (예: `ARE_YOU_HAPPY_CLI_LANG`, `ARE_YOU_HAPPY_CLI_TIMEZONE`)
 - 기본값: 언어 `en`, 타임존은 시스템 타임존
+- Client Credentials(`CLIENT_ID`, `CLIENT_SECRET`)는 이 우선순위를 따르지 않고 **cwd `.env`에서만** 읽습니다.
+- 잘못된 `--lang`·`--timezone` 플래그는 `400`, 환경변수·Config File의 잘못된 값은 경고 후 기본값으로 대체합니다.
 - 언어는 commander 정의 전에 해석되므로 `ARE_YOU_HAPPY_CLI_LANG=ko npx are-you-happy-cli --help`는 한국어로 나옵니다.
 
 ## 파일 위치와 권한
@@ -107,7 +109,9 @@ npm run lint       # biome check
 npm run build      # tsup → dist/cli.js
 ```
 
-구조: `src/commands/`는 인자 파싱만, `src/services/`는 순수 로직, 출력은 renderer가 담당합니다. Language Pack은 `src/locales/en.ts`, `ko.ts`이며 `en`의 키 구조가 타입으로 강제됩니다.
+PR과 `main` push마다 GitHub Actions(`.github/workflows/ci.yml`)가 Node 22·24·26에서 lint, typecheck, build, test를 돌립니다.
+
+구조: `src/commands/`는 인자 파싱과 결과(`ctx.result`) 구성, `src/services/`는 API·Token State 로직, 최종 출력(text/json 봉투)은 `src/output.ts`가 담당합니다. Language Pack은 `src/locales/en.ts`, `ko.ts`이며 `en`의 키 구조가 타입으로 강제됩니다.
 
 ## 템플릿으로 재사용하기: 주석 규칙
 
@@ -127,7 +131,7 @@ npm run build      # tsup → dist/cli.js
 
 | 위치 | 내용 |
 |---|---|
-| `src/commands/action.ts` | `action are-you` 명령 (action 그룹 공통 가드와 `callApi`는 남김) |
+| `src/commands/action.ts` | `action are-you` 명령 (action 그룹 공통 가드와 `services/token-flow.ts`의 `callWithAccessToken`은 남김) |
 | `src/services/api.ts` | Mood 엔드포인트(`MOODS`, `getMood`) |
 | `src/services/korean.ts` | 은/는 조사 선택 |
 | `src/locales/en.ts`, `ko.ts` | `action.areYou` 문자열, 한국어 Mood |

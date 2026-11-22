@@ -9,12 +9,13 @@ const io: Io = {
   homedir: homedir(),
   stdout: { write: (s) => void process.stdout.write(s), isTTY: Boolean(process.stdout.isTTY) },
   stderr: { write: (s) => void process.stderr.write(s), isTTY: Boolean(process.stderr.isTTY) },
-  interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
+  // Prompts render on stderr so stdout stays a single JSON envelope in json mode (ADR-0001).
+  interactive: Boolean(process.stdin.isTTY && process.stderr.isTTY),
   prompt: {
-    input: (opts) => input(opts),
-    password: (opts) => password(opts),
-    select: (opts) => select(opts),
-    confirm: (opts) => confirm(opts),
+    input: (opts) => input(opts, { output: process.stderr }),
+    password: (opts) => password(opts, { output: process.stderr }),
+    select: (opts) => select(opts, { output: process.stderr }),
+    confirm: (opts) => confirm(opts, { output: process.stderr }),
   },
   now: () => new Date(),
   random: Math.random,

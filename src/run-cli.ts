@@ -2,7 +2,7 @@ import { CommanderError } from "@commander-js/extra-typings";
 import type { Ctx } from "./context";
 import { CliError, EXIT_INTERRUPTED, isPromptExit } from "./errors";
 import type { Io } from "./io";
-import { DEFAULT_LANG, isLang, packs } from "./locales";
+import { DEFAULT_LANG, isLang, LANGUAGES, packs } from "./locales";
 import { Output } from "./output";
 import { prescan } from "./prescan";
 import { buildProgram, type OutputSink } from "./program";
@@ -40,6 +40,13 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const lang = isLang(requested) ? requested : DEFAULT_LANG;
   const t = packs[lang];
   const out = new Output(io, format, t.label);
+  // An invalid flag is a usage error; an invalid env/config value falls back with a warning.
+  if (pre.lang !== undefined && !isLang(pre.lang)) {
+    return out.failure(400, t.errors.unsupportedLang(pre.lang, LANGUAGES.join(", ")));
+  }
+  if (pre.timezone !== undefined && !isValidTimeZone(pre.timezone)) {
+    return out.failure(400, t.errors.invalidTimezone(pre.timezone));
+  }
   if (lang !== requested) out.warn(t.warnings.unsupportedLang(requested, lang));
   const timezone = resolveTimeZone(settings.TIMEZONE?.value, io, (value, fallback) =>
     out.warn(t.warnings.invalidTimezone(value, fallback)),
@@ -50,7 +57,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   try {
     const program = buildProgram(ctx, sink);
     await program.parseAsync(argv, { from: "user" });
-    return out.success(ctx.result ?? { message: "OK" });
+    return out.success(ctx.result ?? { message: t.common.ok });
   } catch (err) {
     if (err instanceof CommanderError) return commanderResult(err, ctx, sink);
     if (isPromptExit(err)) return EXIT_INTERRUPTED;
@@ -79,9 +86,9 @@ function commanderResult(err: CommanderError, { out, t }: Ctx, sink: OutputSink)
       return 0;
     }
     if (err.code === "commander.version") {
-      return out.success({ message: "version", data: { version: sink.stdout.trim() } });
+      return out.success({ message: t.common.version, data: { version: sink.stdout.trim() } });
     }
-    return out.success({ message: "help", data: { help: sink.stdout } });
+    return out.success({ message: t.common.help, data: { help: sink.stdout } });
   }
   // Usage errors: unify on 400 / exit 2. Commander's own messages are not translated.
   out.raw("stderr", sink.stderr);
