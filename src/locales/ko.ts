@@ -72,6 +72,17 @@ export const ko: LanguagePack = {
       none: "(없음)",
     },
   },
+  auth: {
+    client: {
+      description: "현재 폴더의 .env에 Client Credentials 등록 (대화형 전용)",
+      id: "ID",
+      secret: "SECRET",
+      required: "값을 입력하세요.",
+      interactiveOnly: "auth client는 대화형 전용입니다. 터미널에서 직접 실행하세요.",
+      existing: (path) => `${path}에 이미 Client Credentials가 있습니다.`,
+      saved: (path, id) => `"${id}" Client Credentials를 ${path}에 저장했습니다`,
+    },
+  },
   warnings: {
     overwritten: (path) => `기존 ${path}을(를) 덮어썼습니다.`,
     tooOpen: (path) => `${path}을(를) 다른 사용자가 읽을 수 있습니다. 실행: chmod 600 "${path}"`,

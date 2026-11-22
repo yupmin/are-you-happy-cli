@@ -71,6 +71,17 @@ For agents:
       none: "(none)",
     },
   },
+  auth: {
+    client: {
+      description: "register Client Credentials in the cwd .env (interactive only)",
+      id: "ID",
+      secret: "SECRET",
+      required: "A value is required.",
+      interactiveOnly: "auth client is interactive only; run it yourself in a terminal.",
+      existing: (path: string) => `Client Credentials already exist in ${path}.`,
+      saved: (path: string, id: string) => `Saved Client Credentials for "${id}" to ${path}`,
+    },
+  },
   warnings: {
     overwritten: (path: string) => `Overwrote the existing ${path}.`,
     tooOpen: (path: string) => `${path} is readable by others; run: chmod 600 "${path}"`,

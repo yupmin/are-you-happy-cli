@@ -45,12 +45,18 @@ describe("config init", () => {
   });
 
   it("interactive: typed timezone is validated with Intl", async () => {
+    const home = tempDir();
     const r = await run(["config", "init", "--lang", "en", "--format", "text"], {
+      home,
       tty: true,
-      answers: ["custom", "Mars/Olympus"],
+      answers: ["custom", "Mars/Olympus", "Asia/Seoul", true],
     });
-    expect(r.exitCode).toBe(1); // scripted prompter surfaces the rejected validation
-    expect(r.asked).toHaveLength(2);
+    expect(r.exitCode).toBe(0);
+    expect(r.rejected).toEqual([expect.stringContaining("Mars/Olympus")]);
+    expect(
+      readConfig(join(home, ".are-you-happy-cli", "config.json")).ENVIRONMENTS
+        .ARE_YOU_HAPPY_CLI_TIMEZONE,
+    ).toBe("Asia/Seoul");
   });
 
   it("rejects an unsupported --lang with 400", async () => {

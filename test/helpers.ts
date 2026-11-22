@@ -1,14 +1,17 @@
 import { mkdtempSync, realpathSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Io, Prompter } from "../src/io";
+import type { Io, Prompter, Validate } from "../src/io";
 import { runCli } from "../src/run-cli";
 
 export type Answer = string | boolean | { cancel: true };
 
 /** Scripted prompter: each prompt call consumes the next answer. `{ cancel: true }` simulates Ctrl+C. */
-export function scriptedPrompter(answers: Answer[]): Prompter & { asked: string[] } {
+export function scriptedPrompter(
+  answers: Answer[],
+): Prompter & { asked: string[]; rejected: string[] } {
   const asked: string[] = [];
+  const rejected: string[] = [];
   const next = (message: string): Answer => {
     asked.push(message);
     if (answers.length === 0) throw new Error(`Unexpected prompt: ${message}`);
@@ -20,20 +23,20 @@ export function scriptedPrompter(answers: Answer[]): Prompter & { asked: string[
     }
     return answer;
   };
+  // Like inquirer: a rejected answer is reported and the question is asked again.
+  const ask = (message: string, validate?: Validate): string => {
+    for (;;) {
+      const value = String(next(message));
+      const verdict = validate?.(value) ?? true;
+      if (verdict === true) return value;
+      rejected.push(verdict);
+    }
+  };
   return {
     asked,
-    input: async ({ message, validate }) => {
-      const value = String(next(message));
-      const verdict = validate?.(value);
-      if (verdict !== undefined && verdict !== true) throw new Error(`validation: ${verdict}`);
-      return value;
-    },
-    password: async ({ message, validate }) => {
-      const value = String(next(message));
-      const verdict = validate?.(value);
-      if (verdict !== undefined && verdict !== true) throw new Error(`validation: ${verdict}`);
-      return value;
-    },
+    rejected,
+    input: async ({ message, validate }) => ask(message, validate),
+    password: async ({ message, validate }) => ask(message, validate),
     select: async ({ message }) => next(message) as never,
     confirm: async ({ message }) => Boolean(next(message)),
   };
@@ -87,6 +90,7 @@ export async function run(argv: string[], opts: RunOptions = {}) {
     stdout,
     stderr,
     asked: prompter.asked,
+    rejected: prompter.rejected,
     json: () => JSON.parse(stdout) as { code: number; message: string; data: any },
   };
 }
