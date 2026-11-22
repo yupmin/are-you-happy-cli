@@ -109,6 +109,8 @@ npm run lint       # biome check
 npm run build      # tsup → dist/cli.js
 ```
 
+`npm install` 때 pre-commit 훅(simple-git-hooks)이 설치되어 커밋마다 staged 파일 biome 검사와 typecheck를 돌립니다. 리뷰 기준은 [`CODING_STANDARDS.md`](CODING_STANDARDS.md)에 있습니다.
+
 PR과 `main` push마다 GitHub Actions(`.github/workflows/ci.yml`)가 Node 22·24·26에서 lint, typecheck, build, test를 돌립니다.
 
 구조: `src/commands/`는 인자 파싱과 결과(`ctx.result`) 구성, `src/services/`는 API·Token State 로직, 최종 출력(text/json 봉투)은 `src/output.ts`가 담당합니다. Language Pack은 `src/locales/en.ts`, `ko.ts`이며 `en`의 키 구조가 타입으로 강제됩니다.

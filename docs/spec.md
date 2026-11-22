@@ -115,7 +115,7 @@ Config File 형식:
 
 ## 구조
 
-- `commands/`: 인자 파싱만, `services/`: 순수 로직, 출력은 renderer가 담당
+- `commands/`: 인자 파싱과 결과(`ctx.result`) 구성, `services/`·`settings/`: 명령 사이에 공유되는 로직, 출력은 `src/output.ts`가 담당 ([ADR-0002](adr/0002-commands-build-result-output-renders.md))
 - 수정 가능 지점 `// CUSTOMIZE: <설명>`, 템플릿 전환 시 삭제 대상 `// SAMPLE:`
 
 ## 테스트
