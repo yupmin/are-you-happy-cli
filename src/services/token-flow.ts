@@ -21,7 +21,7 @@ async function mapApiError<T>(call: () => Promise<T>, message: string, hint: str
 
 /** Client Credentials from the cwd .env (the only place they may live), if complete. */
 export function readClientCredentials(ctx: Ctx): ClientCredentials | undefined {
-  ctx.dotenv.read(); // 400 if broken, warns if too open; values arrive via settings (.env only)
+  ctx.dotenv.check(); // the values themselves arrive via settings (.env only)
   const clientId = ctx.settings.CLIENT_ID?.value;
   const clientSecret = ctx.settings.CLIENT_SECRET?.value;
   return clientId && clientSecret ? { clientId, clientSecret } : undefined;

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { CliError } from "../errors";
 import type { LanguagePack } from "../locales";
 import { readIfExists, writePrivateFile } from "./private-file";
-import { PrivateFileStore, type StoreEnv } from "./store";
+import { SnapshotStore } from "./store";
 
 const DotenvSchema = z.record(z.string(), z.string());
 
@@ -12,24 +12,7 @@ type Dotenv = Record<string, string>;
 const quote = (value: string) => (/^[\w.:/@+-]*$/.test(value) ? value : JSON.stringify(value));
 
 /** The cwd .env, read once at startup. */
-export class DotenvStore extends PrivateFileStore<Dotenv> {
-  private readonly snapshot;
-
-  constructor(path: string, env: StoreEnv) {
-    super(path, env);
-    this.snapshot = this.load();
-  }
-
-  /** Lenient: the values if the file is valid, otherwise undefined. For settings resolution. */
-  peek(): Dotenv | undefined {
-    return this.snapshot.status === "ok" ? this.snapshot.value : undefined;
-  }
-
-  /** Strict: undefined when missing, 400 when broken, warns when too open. */
-  read(): Dotenv | undefined {
-    return this.strict(this.snapshot);
-  }
-
+export class DotenvStore extends SnapshotStore<Dotenv> {
   /** Sets `updates`, preserving every other line. Mode 600. */
   update(updates: Dotenv): void {
     const lines = (readIfExists(this.path) ?? "").split("\n");

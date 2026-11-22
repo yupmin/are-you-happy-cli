@@ -30,7 +30,7 @@ export function registerConfig(group: Command, ctx: Ctx): void {
 function configShow(ctx: Ctx): void {
   const { t, config, dotenv, settings } = ctx;
   const file = config.read();
-  dotenv.read();
+  dotenv.check();
 
   const rows = SETTING_NAMES.flatMap((name) => {
     const resolved = settings[name];

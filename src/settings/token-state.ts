@@ -14,7 +14,7 @@ const TokenStateSchema = z.object({
 
 export type TokenState = z.infer<typeof TokenStateSchema>;
 
-/** The Token State, read fresh on every call. Its folders are created as 700 on save. */
+/** The Token State, read fresh on every call (no lenient read: nothing resolves settings from it). Its folders are created as 700 on save. */
 export class TokenStateStore extends PrivateFileStore<TokenState> {
   constructor(
     path: string,

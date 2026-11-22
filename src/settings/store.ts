@@ -50,3 +50,33 @@ export abstract class PrivateFileStore<T> {
     return load.status === "ok" ? load.value : undefined;
   }
 }
+
+/** A store read once at startup: lenient `peek` for settings resolution, strict `read`/`check`. */
+export abstract class SnapshotStore<T> extends PrivateFileStore<T> {
+  private readonly snapshot: Load<T>;
+
+  constructor(path: string, env: StoreEnv) {
+    super(path, env);
+    this.snapshot = this.load();
+  }
+
+  /** True when the file is there, even if broken. */
+  get exists(): boolean {
+    return this.snapshot.status !== "missing";
+  }
+
+  /** Lenient: the value if valid, otherwise undefined. */
+  peek(): T | undefined {
+    return this.snapshot.status === "ok" ? this.snapshot.value : undefined;
+  }
+
+  /** Strict: undefined when missing, 400 when broken, warns when too open. */
+  read(): T | undefined {
+    return this.strict(this.snapshot);
+  }
+
+  /** `read` for its checks only: 400 when broken, warns when too open. */
+  check(): void {
+    this.read();
+  }
+}
