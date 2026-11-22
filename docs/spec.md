@@ -1,0 +1,136 @@
+# are-you-happy-cli 스펙
+
+Agent Skill에서 호출하는 CLI 샘플. 가상 API(are.you.happy.cli)에 **Access Token**을 보내 이름에 대한 **Mood**를 받는다. 추후 **Sample Action**(`action are-you`)을 삭제하고 auth·config 로직을 재활용해 다른 CLI를 만드는 템플릿이 목적이다. 용어는 `GLOSSARY.md`를 따른다.
+
+## 툴체인
+
+- TypeScript(ESM), Node ≥ 22 (`engines`), npm
+- `@commander-js/extra-typings`, `@inquirer/prompts`, `zod`
+- 빌드 `tsup` (shebang 포함 단일 ESM), 테스트 `vitest`, 린트/포맷 `biome`
+- 배포: npm `are-you-happy-cli`, 사용은 `npx are-you-happy-cli` (배포는 별도 단계)
+
+## 식별자
+
+- **Project Keyword**: `are-you-happy-cli` — `src/project.ts` 단일 정의 (`// CUSTOMIZE:`)
+- 실행 파일명 `are-you-happy-cli`, 환경변수 접두사 `ARE_YOU_HAPPY_CLI_`
+
+## 파일과 경로
+
+| 대상 | 경로 | 권한 |
+|---|---|---|
+| Config File | `$XDG_CONFIG_HOME/are-you-happy-cli/config.json`, 없으면 `~/.are-you-happy-cli/config.json` | 파일 600 / 폴더 700 |
+| Client Credentials | CLI 실행 폴더(cwd)의 `.env`만 — 상위 탐색 안 함 | 600 |
+| Token State | `<config-dir>/are-you-happy-cli-state-dir/token.json` | 600 |
+
+Config File 형식:
+
+```json
+{
+  "ENVIRONMENTS": {
+    "ARE_YOU_HAPPY_CLI_LANG": "en",
+    "ARE_YOU_HAPPY_CLI_TIMEZONE": "Asia/Seoul"
+  },
+  "mode": "CRAZY"
+}
+```
+
+- `ENVIRONMENTS` 안은 **Environment Setting**, 밖(`mode`)은 **File-only Setting**. `mode`는 예시이며 동작 영향 없음.
+- `.env` 키: `ARE_YOU_HAPPY_CLI_CLIENT_ID`, `ARE_YOU_HAPPY_CLI_CLIENT_SECRET`. 기존 다른 키는 보존.
+- `token.json`: `{ accessToken, refreshToken, expiresAt, clientId }`. Access Token은 이 파일에서만 읽는다(환경변수 주입 불가).
+- 세 파일 모두 `zod`로 검증. 파싱/스키마 실패 → `400` + 재생성 안내. 권한이 600보다 넓으면 경고.
+
+## 설정 해석
+
+- 우선순위: **플래그 > 셸 환경변수 > cwd `.env` > `config.json`의 `ENVIRONMENTS` > 기본값**
+- commander 정의 **전에** 설정을 해석해 언어를 정한다 → `ARE_YOU_HAPPY_CLI_LANG=en are-you-happy-cli --help`는 영어.
+- 기본값: 언어 `en`, 타임존 = 시스템 타임존.
+
+## 명령
+
+전역 옵션: `--format <text|json>`, `--verbose`, `--version`, `-h/--help`
+
+| 명령 | 동작 |
+|---|---|
+| `config init` | 언어 선택(존재하는 **Language Pack**만: en, ko) → 타임존(시스템 사용 또는 직접 입력, `Intl`로 검증) → 확인 후 저장. 플래그 `--lang`, `--timezone`로 비대화형 실행 가능. 기존 값 덮어쓰기 시 경고 |
+| `config show` | 최종 설정값과 출처(flag / shell env / .env / config.json / default). 키에 `SECRET`·`TOKEN` 포함 시 앞 4자 + `****` 마스킹. Client ID는 노출. 마스킹 규칙은 `// CUSTOMIZE:` 함수 하나 |
+| `auth client` | **대화형 전용.** `ID:` 입력 → `SECRET:` 입력(화면에 비표시) → `.env` 저장. 플래그 없음. 비TTY면 `400`. 기존 값 덮어쓰기 시 경고 |
+| `auth issue-token` | `.env`의 Client Credentials를 고정값(`happy-client` / `happy-secret`, `// CUSTOMIZE:`)과 비교, 불일치 시 `401`. 성공 시 Token State 저장 |
+| `auth purge-token` | Token State 삭제 |
+| `action are-you <name>` | (`// SAMPLE:`) 무작위 Mood 반환 + 설정 타임존 기준 날짜·시간 표시 |
+
+### 덮어쓰기 경고
+
+- TTY: "이미 값이 있습니다. 덮어쓸까요?" 확인
+- 비TTY: 덮어쓰고 `data.warnings`(json) / stderr(text)에 경고
+- `--yes`, `--no-input`은 두지 않는다
+
+### action 가드
+
+`action` 그룹 공통 가드: Config File이 없으면 `400`(종료 코드 2) + "`config init`을 먼저 실행하라". 다른 명령은 Config File 없이도 기본값으로 동작.
+
+## 가상 API
+
+- HTTP 없이 프로세스 내 함수로 구현 (`services/api`)
+- Access Token 상수 `it.me.and.you`, Refresh Token 상수 `it.me.and.you.again`, TTL 3600초 (`// CUSTOMIZE:`)
+- 발급 응답: `{ accessToken, refreshToken, expiresIn }`
+- Mood 조회 시 토큰 불일치 → `401`
+
+### 토큰 흐름 (action 실행 시)
+
+1. Token State 없음 → `401` + "`auth issue-token`을 먼저 실행하라"
+2. 저장된 `clientId` ≠ 현재 `.env`의 Client ID → 무효로 취급
+3. 만료 → Refresh Token으로 갱신 → 실패 시 Client Credentials로 재발급 → 실패 시 `401`
+
+## Mood
+
+`happy`, `sad`, `angry`, `excited`, `tired`
+
+- ko: 행복해, 슬퍼, 화나, 신나, 피곤해 — 이름 받침에 따라 은/는 자동 선택 (민수는 / 영진은)
+- en: "Minsu is happy."
+
+## 출력
+
+- 포맷 결정: `--format` 명시 > stdout이 TTY면 `text`, 아니면 `json`. 에이전트는 SKILL.md 지침대로 항상 `--format json` 명시.
+- json: stdout에 봉투 한 번 — `{ code, message, data }` (ADR-0001)
+  - `code`: HTTP 스타일 숫자(`200`, `400`, `401`, `500`), 실패 시 `data: null`, 경고는 `data.warnings`
+  - 시각은 ISO8601 + 설정 타임존 오프셋 (`2026-11-22T23:10:00+09:00`)
+  - 색상·ANSI 없음
+- text: 결과 stdout, 경고·오류 stderr. 시각은 Language Pack 형식.
+- 색상: `util.styleText`, `NO_COLOR`/`FORCE_COLOR` 존중, 비TTY에서 끔.
+
+## 오류와 종료 코드
+
+- `httpStatusToExitCode()` 단일 매핑 (`// CUSTOMIZE:`): `2xx→0`, `400→2`, `401·403→3`, 그 외 `4xx·5xx→1`, Ctrl+C `130`
+- `CliError`(예상된 오류, status·hint 보유) vs 버그(예상 못한 오류: `--verbose` 시 stack trace, 아니면 힌트)
+- commander 오류는 `exitOverride()`로 가로채 `400`/종료 코드 2로 통일, json 모드면 봉투 출력. `showHelpAfterError`는 text 모드만. commander 내장 메시지는 번역하지 않음.
+- `ExitPromptError`(프롬프트 중 Ctrl+C) → 조용히 130
+- `process.exit()` 금지, `process.exitCode` 사용, `parseAsync()` 사용
+
+## i18n
+
+- `src/locales/en.ts`, `ko.ts`. `en` 키 구조를 타입으로 강제(`ko` 누락 시 컴파일 오류)
+- 선택 가능한 언어 = 등록된 Language Pack 목록에서 자동 생성
+- Language Pack이 없는 값(`ja` 등) → `en`으로 대체 + 경고
+- 도움말 예시(`addHelpText`, 사람용 + `--format json` 에이전트용)도 Language Pack에 둔다
+
+## 구조
+
+- `commands/`: 인자 파싱만, `services/`: 순수 로직, 출력은 renderer가 담당
+- 수정 가능 지점 `// CUSTOMIZE: <설명>`, 템플릿 전환 시 삭제 대상 `// SAMPLE:`
+
+## 테스트
+
+- services 단위 테스트(무작위는 주입 가능하게)
+- commands는 `exitOverride` + `configureOutput`으로 출력 캡처
+- 401은 `token.json`을 직접 변조해 검증
+
+## Skill
+
+`skills/are-you-happy-cli/SKILL.md`
+
+- 모든 호출에 `--format json` 명시
+- Client Credentials가 없으면 사용자에게 `! npx are-you-happy-cli auth client`를 직접 실행하도록 요청 (에이전트는 실행 불가)
+
+## 범위 밖
+
+템플릿 전환 가이드, `.gitignore` 경고, `--yes`/`--no-input`, table/csv 포맷, 셸 자동완성, 업데이트 알림
