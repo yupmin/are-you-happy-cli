@@ -43,7 +43,7 @@ For agents:
     auth: `
 Examples:
   $ ${bin} auth client
-  $ ${bin} auth issue-token
+  $ ${bin} auth issue-token   # optional: action issues one when missing
   $ ${bin} auth purge-token
 
 For agents:
@@ -131,7 +131,7 @@ For agents:
   hints: {
     runConfigInit: `Recreate it with \`${bin} config init\`.`,
     runAuthClient: `Register them with \`${bin} auth client\`.`,
-    runIssueToken: `Run \`${bin} auth issue-token\` first.`,
+    runIssueToken: `Issue a new one with \`${bin} auth issue-token\`.`,
     runConfigInitFirst: `Run \`${bin} config init\` first.`,
   },
   errors: {

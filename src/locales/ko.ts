@@ -52,7 +52,7 @@ export const ko: LanguagePack = {
     auth: `
 예시:
   $ ${bin} auth client
-  $ ${bin} auth issue-token
+  $ ${bin} auth issue-token   # 선택: action이 없으면 자동 발급
   $ ${bin} auth purge-token
 
 에이전트용:
@@ -140,7 +140,7 @@ export const ko: LanguagePack = {
   hints: {
     runConfigInit: `\`${bin} config init\`으로 다시 만드세요.`,
     runAuthClient: `\`${bin} auth client\`로 먼저 등록하세요.`,
-    runIssueToken: `\`${bin} auth issue-token\`을 먼저 실행하세요.`,
+    runIssueToken: `\`${bin} auth issue-token\`으로 새로 발급하세요.`,
     runConfigInitFirst: `\`${bin} config init\`을 먼저 실행하세요.`,
   },
   errors: {
