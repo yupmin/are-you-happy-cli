@@ -11,6 +11,7 @@ Read during code review. Rules here are judgement calls; anything mechanical liv
 
 - `src/commands/` parses arguments, runs the command's flow, and sets `ctx.result`. Final text/json output belongs to `src/output.ts`.
 - Logic reused by two commands moves to `src/services/` or `src/settings/`.
+- Each settings file (Config File, `.env`, Token State) is read and written only through its store in `src/settings/`; the store owns the broken-file `400` and the too-open warning, so callers never branch on load status.
 - User-facing strings come from the Language Pack (`src/locales/`), including envelope messages.
 
 ## Template markers

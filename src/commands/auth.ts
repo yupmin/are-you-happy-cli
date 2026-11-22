@@ -1,11 +1,8 @@
 import type { Command } from "@commander-js/extra-typings";
 import { type Ctx, cancel } from "../context";
 import { CliError } from "../errors";
-import { assertDotenvReadable } from "../guards";
 import { envKey } from "../project";
 import { issueAndSave } from "../services/token-flow";
-import { deleteTokenState } from "../services/token-state";
-import { updateDotenv } from "../settings/dotenv";
 import { maskValue } from "../settings/mask";
 import { formatIsoInTimeZone } from "../time";
 
@@ -46,24 +43,23 @@ async function authIssueToken(ctx: Ctx): Promise<void> {
 }
 
 function authPurgeToken(ctx: Ctx): void {
-  const { t, out, paths } = ctx;
-  const deleted = deleteTokenState(paths.tokenFile);
+  const { t, out, tokenState } = ctx;
+  const deleted = tokenState.delete();
   if (!deleted) out.warn(t.auth.purgeToken.none);
   ctx.result = {
-    message: deleted ? t.auth.purgeToken.purged(paths.tokenFile) : t.auth.purgeToken.none,
-    data: { deleted, tokenFile: paths.tokenFile },
+    message: deleted ? t.auth.purgeToken.purged(tokenState.path) : t.auth.purgeToken.none,
+    data: { deleted, tokenFile: tokenState.path },
   };
 }
 
 /** Interactive only: secrets never come in through flags (shell history, process list). */
 async function authClient(ctx: Ctx): Promise<void> {
-  const { io, t, out, paths, dotenv } = ctx;
+  const { io, t, out, dotenv } = ctx;
   if (!io.interactive) throw new CliError(400, t.auth.client.interactiveOnly);
-  assertDotenvReadable(ctx);
 
-  const current = dotenv.status === "ok" ? dotenv.values : {};
+  const current = dotenv.read() ?? {};
   if (current[CLIENT_ID_KEY] !== undefined || current[CLIENT_SECRET_KEY] !== undefined) {
-    out.warn(t.auth.client.existing(paths.envFile));
+    out.warn(t.auth.client.existing(dotenv.path));
     if (!(await io.prompt.confirm({ message: t.common.overwrite, default: false }))) {
       cancel(ctx);
       return;
@@ -76,9 +72,9 @@ async function authClient(ctx: Ctx): Promise<void> {
     await io.prompt.password({ message: t.auth.client.secret, validate: required })
   ).trim();
 
-  updateDotenv(paths.envFile, { [CLIENT_ID_KEY]: id, [CLIENT_SECRET_KEY]: secret });
+  dotenv.update({ [CLIENT_ID_KEY]: id, [CLIENT_SECRET_KEY]: secret });
   ctx.result = {
-    message: t.auth.client.saved(paths.envFile, id),
-    data: { saved: true, envFile: paths.envFile, clientId: id },
+    message: t.auth.client.saved(dotenv.path, id),
+    data: { saved: true, envFile: dotenv.path, clientId: id },
   };
 }

@@ -1,10 +1,8 @@
 import type { Command } from "@commander-js/extra-typings";
 import { type Ctx, cancel } from "../context";
 import { CliError } from "../errors";
-import { assertConfigReadable, assertDotenvReadable, warnIfTooOpen } from "../guards";
 import { LANGUAGES, type Lang, packs } from "../locales";
 import { envKey } from "../project";
-import { saveConfig } from "../settings/config-file";
 import { maskSetting } from "../settings/mask";
 import { SETTING_NAMES } from "../settings/resolve";
 import { isValidTimeZone } from "../timezone";
@@ -30,10 +28,9 @@ export function registerConfig(group: Command, ctx: Ctx): void {
 }
 
 function configShow(ctx: Ctx): void {
-  const { t, paths, config, settings } = ctx;
-  assertConfigReadable(ctx);
-  assertDotenvReadable(ctx);
-  warnIfTooOpen(ctx, paths.configFile, paths.envFile);
+  const { t, config, dotenv, settings } = ctx;
+  const file = config.read();
+  dotenv.check();
 
   const rows = SETTING_NAMES.flatMap((name) => {
     const resolved = settings[name];
@@ -41,7 +38,7 @@ function configShow(ctx: Ctx): void {
     const key = envKey(name);
     return [{ key, value: maskSetting(key, resolved.value), source: resolved.source }];
   });
-  const { ENVIRONMENTS: _env, ...fileOnly } = config.status === "ok" ? config.config : {};
+  const { ENVIRONMENTS: _env, ...fileOnly } = file ?? {};
   const fileSettings = Object.entries(fileOnly).map(([key, value]) => ({
     key,
     value: typeof value === "string" ? maskSetting(key, value) : value,
@@ -64,14 +61,14 @@ function configShow(ctx: Ctx): void {
   ].join("\n");
 
   ctx.result = {
-    message: paths.configFile,
-    data: { configFile: paths.configFile, settings: rows, fileSettings },
+    message: config.path,
+    data: { configFile: config.path, settings: rows, fileSettings },
     text,
   };
 }
 
 async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
-  const { io, t, out, paths, config } = ctx;
+  const { io, t, out, config } = ctx;
   const { prompt } = io;
 
   if (!io.interactive && (flags.lang === undefined || flags.timezone === undefined)) {
@@ -88,19 +85,19 @@ async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
 
   const timezone = flags.timezone ?? (await askTimezone(ctx));
 
-  if (config.status !== "missing") {
+  if (config.exists) {
     if (io.interactive) {
       if (!(await prompt.confirm({ message: t.common.overwrite, default: false }))) {
         cancel(ctx);
         return;
       }
     } else {
-      out.warn(t.warnings.overwritten(paths.configFile));
+      out.warn(t.warnings.overwritten(config.path));
     }
   } else if (io.interactive) {
     if (
       !(await prompt.confirm({
-        message: t.config.init.confirmSave(paths.configFile),
+        message: t.config.init.confirmSave(config.path),
         default: true,
       }))
     ) {
@@ -110,8 +107,8 @@ async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
   }
 
   // Keep File-only Settings and other Environment Settings from a valid existing file.
-  const base = config.status === "ok" ? config.config : {};
-  saveConfig(paths.configFile, paths.configDir, {
+  const base = config.peek() ?? {};
+  config.save({
     ...base,
     ENVIRONMENTS: {
       ...base.ENVIRONMENTS,
@@ -120,8 +117,8 @@ async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
     },
   });
   ctx.result = {
-    message: t.config.init.saved(paths.configFile),
-    data: { saved: true, path: paths.configFile, lang, timezone },
+    message: t.config.init.saved(config.path),
+    data: { saved: true, path: config.path, lang, timezone },
   };
 }
 

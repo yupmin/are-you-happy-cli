@@ -1,10 +1,10 @@
 import type { Io } from "./io";
 import type { Lang, LanguagePack } from "./locales";
 import type { Output, Success } from "./output";
-import type { ConfigLoad } from "./settings/config-file";
-import type { DotenvLoad } from "./settings/dotenv";
-import type { Paths } from "./settings/paths";
+import type { ConfigFileStore } from "./settings/config-file";
+import type { DotenvStore } from "./settings/dotenv";
 import type { Settings } from "./settings/resolve";
+import type { TokenStateStore } from "./settings/token-state";
 
 /** Per-invocation state shared by every command. */
 export interface Ctx {
@@ -13,11 +13,11 @@ export interface Ctx {
   lang: Lang;
   out: Output;
   settings: Settings;
-  paths: Paths;
   /** The Config File as found at startup. */
-  config: ConfigLoad;
+  config: ConfigFileStore;
   /** The cwd .env as found at startup. */
-  dotenv: DotenvLoad;
+  dotenv: DotenvStore;
+  tokenState: TokenStateStore;
   /** Validated IANA time zone used for every displayed time. */
   timezone: string;
   /** Set by the command that ran; rendered once after parsing. */
