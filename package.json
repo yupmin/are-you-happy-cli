@@ -1,0 +1,43 @@
+{
+  "name": "are-you-happy-cli",
+  "version": "0.1.0",
+  "description": "Sample CLI for Agent Skills: ask a virtual API how someone feels.",
+  "type": "module",
+  "bin": {
+    "are-you-happy-cli": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "prepack": "npm run build"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@commander-js/extra-typings": "^15.1.0",
+    "@inquirer/prompts": "^8.8.1",
+    "commander": "^15.1.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "@types/node": "^26.6.6",
+    "tsup": "^9.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  },
+  "keywords": [
+    "cli",
+    "agent-skill",
+    "template"
+  ]
+}
