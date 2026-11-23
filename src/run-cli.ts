@@ -3,7 +3,7 @@ import type { Ctx } from "./context";
 import { CliError, EXIT_INTERRUPTED, isPromptExit } from "./errors";
 import type { Io } from "./io";
 import { DEFAULT_LANG, isLang, LANGUAGES, packs } from "./locales";
-import { Output } from "./output";
+import { FORMAT_GROUP, Output } from "./output";
 import { prescan } from "./prescan";
 import { buildProgram, type OutputSink } from "./program";
 import { envKey } from "./project";
@@ -18,7 +18,8 @@ import { isValidTimeZone } from "./timezone";
 /** The CLI as a function: parse `argv`, talk to the world only through `io`, return the exit code. */
 export async function runCli(argv: string[], io: Io): Promise<number> {
   const pre = prescan(argv);
-  const format = pre.format ?? (io.stdout.isTTY ? "text" : "json");
+  const format =
+    pre.command === FORMAT_GROUP ? (pre.format ?? (io.stdout.isTTY ? "text" : "json")) : "text";
   // Settings are resolved before commander is built so that --help is already translated.
   const paths = resolvePaths(io);
   let storeEnv: ReturnType<StoreEnv> | undefined;

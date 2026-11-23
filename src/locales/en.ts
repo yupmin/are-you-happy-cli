@@ -11,7 +11,6 @@ export const en = {
   label: { warning: "Warning:", error: "Error:", hint: "Hint:" },
   program: {
     description: "Ask a virtual API how someone feels. A sample CLI for Agent Skills.",
-    format: "output format (default: text on a TTY, json otherwise)",
     verbose: "print stack traces for unexpected errors",
     lang: "language (overrides ARE_YOU_HAPPY_CLI_LANG)",
     timezone: "IANA time zone (overrides ARE_YOU_HAPPY_CLI_TIMEZONE)",
@@ -36,18 +35,12 @@ For agents:
 Examples:
   $ ${bin} config init
   $ ${bin} config init --lang ko --timezone Asia/Seoul
-  $ ${bin} config show
-
-For agents:
-  $ ${bin} config show --format json`,
+  $ ${bin} config show`,
     auth: `
 Examples:
   $ ${bin} auth client
   $ ${bin} auth issue-token   # optional: action issues one when missing
-  $ ${bin} auth purge-token
-
-For agents:
-  $ ${bin} auth issue-token --format json`,
+  $ ${bin} auth purge-token`,
     action: `
 Examples:
   $ ${bin} action are-you Minsu
@@ -103,6 +96,7 @@ For agents:
     },
   },
   action: {
+    format: "output format (default: text on a TTY, json otherwise)",
     configRequired: "No Config File found.",
     // SAMPLE: strings for action are-you.
     areYou: {

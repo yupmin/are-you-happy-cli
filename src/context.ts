@@ -26,5 +26,5 @@ export interface Ctx {
 
 /** The user declined a confirmation: nothing was saved. */
 export function cancel(ctx: Ctx): void {
-  ctx.result = { message: ctx.t.common.cancelled, data: { saved: false } };
+  ctx.result = { message: ctx.t.common.cancelled };
 }

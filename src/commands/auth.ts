@@ -3,8 +3,6 @@ import { type Ctx, cancel } from "../context";
 import { CliError } from "../errors";
 import { envKey } from "../project";
 import { issueAndSave } from "../services/token-flow";
-import { maskValue } from "../settings/mask";
-import { formatIsoInTimeZone } from "../time";
 
 export const CLIENT_ID_KEY = envKey("CLIENT_ID");
 export const CLIENT_SECRET_KEY = envKey("CLIENT_SECRET");
@@ -30,16 +28,7 @@ async function authIssueToken(ctx: Ctx): Promise<void> {
   const { t, timezone } = ctx;
   const state = await issueAndSave(ctx);
   const expiresAt = new Date(state.expiresAt);
-  ctx.result = {
-    message: t.auth.issueToken.issued(formatIsoInTimeZone(expiresAt, timezone)),
-    text: t.auth.issueToken.issued(t.format.dateTime(expiresAt, timezone)),
-    data: {
-      accessToken: maskValue(state.accessToken),
-      refreshToken: maskValue(state.refreshToken),
-      expiresAt: formatIsoInTimeZone(expiresAt, timezone),
-      clientId: state.clientId,
-    },
-  };
+  ctx.result = { message: t.auth.issueToken.issued(t.format.dateTime(expiresAt, timezone)) };
 }
 
 function authPurgeToken(ctx: Ctx): void {
@@ -48,7 +37,6 @@ function authPurgeToken(ctx: Ctx): void {
   if (!deleted) out.warn(t.auth.purgeToken.none);
   ctx.result = {
     message: deleted ? t.auth.purgeToken.purged(tokenState.path) : t.auth.purgeToken.none,
-    data: { deleted, tokenFile: tokenState.path },
   };
 }
 
@@ -73,8 +61,5 @@ async function authClient(ctx: Ctx): Promise<void> {
   ).trim();
 
   dotenv.update({ [CLIENT_ID_KEY]: id, [CLIENT_SECRET_KEY]: secret });
-  ctx.result = {
-    message: t.auth.client.saved(dotenv.path, id),
-    data: { saved: true, envFile: dotenv.path, clientId: id },
-  };
+  ctx.result = { message: t.auth.client.saved(dotenv.path, id) };
 }

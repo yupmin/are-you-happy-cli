@@ -4,6 +4,8 @@ import type { Io, OutStream } from "./io";
 
 export type Format = "text" | "json";
 export const FORMATS: readonly Format[] = ["text", "json"];
+// CUSTOMIZE: the only command group with --format; every other command is text (ADR-0003).
+export const FORMAT_GROUP = "action";
 
 type Style = Parameters<typeof styleText>[0];
 

@@ -9,16 +9,16 @@ A sample CLI that asks a virtual API for a person's **Mood** (`happy`, `sad`, `a
 
 ## Invocation
 
-Always run:
-
 ```sh
-npx are-you-happy-cli <command> --format json
+npx are-you-happy-cli action <command> --format json   # actions: parse the JSON envelope
+npx are-you-happy-cli config|auth <command>              # setup: text only, judge by exit code
 ```
 
-- Every call MUST pass `--format json`. Never parse text output.
+- Every `action` call MUST pass `--format json`. Parse only that JSON envelope.
+- `config` and `auth` commands have no `--format` (passing it is a usage error, exit 2). They print text for people: the result on stdout, warnings and errors on stderr. Decide success or failure from the exit code, and relay stderr warnings to the user.
 - Run from the user's project directory: Client Credentials are read from the `.env` in the current directory only (no parent lookup).
 
-## Output contract
+## Output contract (`action --format json`)
 
 - stdout carries exactly one JSON envelope: `{ "code": number, "message": string, "data": object | null }`.
 - `code` is HTTP-style (`200`, `400`, `401`, `403`, `500`).
@@ -26,7 +26,7 @@ npx are-you-happy-cli <command> --format json
 - Warnings (overwrites, loose file permissions, token refresh, unsupported language fallback) appear in `data.warnings`. Relay relevant ones to the user.
 - Timestamps are ISO 8601 with the configured time zone offset.
 
-Exit codes:
+Exit codes (every command):
 
 | Exit | Meaning |
 |---|---|
@@ -41,7 +41,7 @@ Exit codes:
 | Command | Notes |
 |---|---|
 | `config init --lang <en\|ko> --timezone <IANA>` | Creates the Config File. Non-interactive when both flags are given. Overwrites with a warning. |
-| `config show` | Effective settings and where each came from. Secrets are masked. |
+| `config show` | Effective settings and where each came from, one `KEY = value (source)` line each. Secrets are masked. |
 | `auth client` | **Interactive only. You cannot run it.** Registers Client Credentials into `./.env`. |
 | `auth issue-token` | Issues an Access Token from the Client Credentials and saves the Token State. |
 | `auth purge-token` | Deletes the Token State. |
@@ -55,11 +55,11 @@ Apply at most one recovery step per failure, then retry the original command onc
 
 | Situation | Do |
 |---|---|
-| `400` and `message` mentions `config init` (no Config File) | Run `config init --lang <lang> --timezone <zone> --format json`. If language/time zone are unknown, ask the user, or use `en` and their system time zone. |
+| `400` and `message` mentions `config init` (no Config File) | Run `config init --lang <lang> --timezone <zone>` (exit 0 = done). If language/time zone are unknown, ask the user, or use `en` and their system time zone. |
 | `400` "Config File is not valid" | Same as above (recreates it). |
-| `400` "Token State is not valid" | Run `auth issue-token --format json` once, then retry. |
+| `400` "Token State is not valid" | Run `auth issue-token` once, then retry. |
 | `401` and `message` mentions `auth client` (no Client Credentials) | Ask the user to run `! npx are-you-happy-cli auth client` themselves in the prompt, then retry. |
-| `401` otherwise (token rejected) | Run `auth issue-token --format json` once, then retry. If it still fails, stop and tell the user. |
+| `401` otherwise (token rejected) | Run `auth issue-token` once, then retry. If it still fails, stop and tell the user. |
 | `500` | Rerun once with `--verbose`, report the stack trace to the user. |
 
 Never ask the user to paste the Client Secret (or any token) into chat. Credentials go in only via `auth client`, typed by the user.

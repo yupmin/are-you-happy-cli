@@ -47,7 +47,7 @@ Config File 형식:
 
 ## 명령
 
-전역 옵션: `--format <text|json>`, `--verbose`, `--version`, `-h/--help`
+전역 옵션: `--verbose`, `--version`, `-h/--help`. `--format <text|json>`은 `action` 그룹 옵션 ([ADR-0003](adr/0003-format-only-for-action.md))
 
 | 명령 | 동작 |
 |---|---|
@@ -61,7 +61,7 @@ Config File 형식:
 ### 덮어쓰기 경고
 
 - TTY: "이미 값이 있습니다. 덮어쓸까요?" 확인
-- 비TTY: 덮어쓰고 `data.warnings`(json) / stderr(text)에 경고
+- 비TTY: 덮어쓰고 stderr에 경고
 - `--yes`, `--no-input`은 두지 않는다
 
 ### action 가드
@@ -90,7 +90,7 @@ Config File 형식:
 
 ## 출력
 
-- 포맷 결정: `--format` 명시 > stdout이 TTY면 `text`, 아니면 `json`. 에이전트는 SKILL.md 지침대로 항상 `--format json` 명시.
+- 포맷 결정(`action` 그룹만): `--format` 명시 > stdout이 TTY면 `text`, 아니면 `json`. 에이전트는 SKILL.md 지침대로 `action` 호출에 `--format json` 명시. 그 밖의 명령(`config`·`auth`·`--help`·`--version`)은 항상 `text` ([ADR-0003](adr/0003-format-only-for-action.md)).
 - json: stdout에 봉투 한 번 — `{ code, message, data }` (ADR-0001)
   - `code`: HTTP 스타일 숫자(`200`, `400`, `401`, `500`), 실패 시 `data: null`, 경고는 `data.warnings`
   - 시각은 ISO8601 + 설정 타임존 오프셋 (`2026-11-22T23:10:00+09:00`)
@@ -111,7 +111,7 @@ Config File 형식:
 - `src/locales/en.ts`, `ko.ts`. `en` 키 구조를 타입으로 강제(`ko` 누락 시 컴파일 오류)
 - 선택 가능한 언어 = 등록된 Language Pack 목록에서 자동 생성
 - Language Pack이 없는 값(`ja` 등) → `en`으로 대체 + 경고
-- 도움말 예시(`addHelpText`, 사람용 + `--format json` 에이전트용)도 Language Pack에 둔다
+- 도움말 예시(`addHelpText`, 사람용 + `action`만 `--format json` 에이전트용)도 Language Pack에 둔다
 
 ## 구조
 
@@ -128,7 +128,7 @@ Config File 형식:
 
 `skills/are-you-happy-cli/SKILL.md`
 
-- 모든 호출에 `--format json` 명시
+- `action` 호출에 `--format json` 명시. `config`·`auth`는 text뿐이므로 종료 코드로 판단
 - Client Credentials가 없으면 사용자에게 `! npx are-you-happy-cli auth client`를 직접 실행하도록 요청 (에이전트는 실행 불가)
 
 ## 범위 밖

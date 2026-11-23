@@ -19,7 +19,6 @@ export function buildProgram(ctx: Ctx, sink: OutputSink) {
     .version(pkg.version, "--version", t.program.version)
     .helpOption("-h, --help", t.program.help)
     .helpCommand("help [command]", t.program.helpCommand)
-    .addOption(new Option("--format <format>", t.program.format).choices(FORMATS))
     .option("--verbose", t.program.verbose)
     .option("--lang <lang>", t.program.lang)
     .option("--timezone <timezone>", t.program.timezone)
@@ -48,6 +47,7 @@ export function buildProgram(ctx: Ctx, sink: OutputSink) {
   const action = program
     .command("action")
     .description(t.groups.action)
+    .addOption(new Option("--format <format>", t.action.format).choices(FORMATS))
     .addHelpText("after", t.examples.action);
   registerAction(action, ctx);
 

@@ -19,19 +19,23 @@ function setup(opts: { config?: unknown; rawConfig?: string; dotenv?: string } =
   return { home, cwd };
 }
 
-const setting = (data: any, name: string) =>
-  data.settings.find((s: any) => s.key === `ARE_YOU_HAPPY_CLI_${name}`);
+/** One `KEY = value (source)` line of the text output. */
+function setting(stdout: string, name: string) {
+  const key = `ARE_YOU_HAPPY_CLI_${name}`;
+  const match = stdout.match(new RegExp(`^${key}\\s*= (.*) \\((.+)\\)$`, "m"));
+  return match ? { key, value: match[1], source: match[2] } : undefined;
+}
 
 describe("config show", () => {
   it("works without a Config File using defaults", async () => {
     const r = await run(["config", "show"], { ...setup(), systemTimeZone: "Europe/Paris" });
     expect(r.exitCode).toBe(0);
-    expect(setting(r.json().data, "LANG")).toEqual({
+    expect(setting(r.stdout, "LANG")).toEqual({
       key: "ARE_YOU_HAPPY_CLI_LANG",
       value: "en",
       source: "default",
     });
-    expect(setting(r.json().data, "TIMEZONE")).toMatchObject({
+    expect(setting(r.stdout, "TIMEZONE")).toMatchObject({
       value: "Europe/Paris",
       source: "default",
     });
@@ -43,7 +47,7 @@ describe("config show", () => {
       dotenv: "ARE_YOU_HAPPY_CLI_LANG=en\nARE_YOU_HAPPY_CLI_TIMEZONE=Asia/Tokyo\n",
     });
     const data = (argv: string[], env = {}) =>
-      run(["config", "show", ...argv], { ...dirs, env }).then((r) => r.json().data);
+      run(["config", "show", ...argv], { ...dirs, env }).then((r) => r.stdout);
 
     expect(setting(await data([]), "TIMEZONE")).toMatchObject({
       value: "Asia/Tokyo",
@@ -63,7 +67,7 @@ describe("config show", () => {
 
     const configOnly = setup({ config: { ENVIRONMENTS: { ARE_YOU_HAPPY_CLI_LANG: "ko" } } });
     const r = await run(["config", "show"], configOnly);
-    expect(setting(r.json().data, "LANG")).toMatchObject({ value: "ko", source: "config.json" });
+    expect(setting(r.stdout, "LANG")).toMatchObject({ value: "ko", source: "config.json" });
   });
 
   it("never searches parent folders for .env", async () => {
@@ -72,7 +76,7 @@ describe("config show", () => {
     const cwd = join(parent, "child");
     mkdirSync(cwd);
     const r = await run(["config", "show"], { cwd });
-    expect(setting(r.json().data, "LANG").source).toBe("default");
+    expect(setting(r.stdout, "LANG")?.source).toBe("default");
   });
 
   it("shows File-only Settings, which env vars cannot set", async () => {
@@ -80,7 +84,8 @@ describe("config show", () => {
       ...setup({ config: { ENVIRONMENTS: {}, mode: "CRAZY" } }),
       env: { ARE_YOU_HAPPY_CLI_MODE: "CALM" },
     });
-    expect(r.json().data.fileSettings).toEqual([{ key: "mode", value: "CRAZY" }]);
+    expect(r.stdout).toMatch(/File-only Settings:\nmode\s*= CRAZY$/m);
+    expect(r.stdout).not.toContain("CALM");
   });
 
   it("masks SECRET/TOKEN keys, shows the Client ID", async () => {
@@ -90,8 +95,8 @@ describe("config show", () => {
           "ARE_YOU_HAPPY_CLI_CLIENT_ID=happy-client\nARE_YOU_HAPPY_CLI_CLIENT_SECRET=happy-secret\n",
       }),
     });
-    expect(setting(r.json().data, "CLIENT_ID").value).toBe("happy-client");
-    expect(setting(r.json().data, "CLIENT_SECRET").value).toBe("happ****");
+    expect(setting(r.stdout, "CLIENT_ID")?.value).toBe("happy-client");
+    expect(setting(r.stdout, "CLIENT_SECRET")?.value).toBe("happ****");
     expect(r.stdout).not.toContain("happy-secret");
   });
 
@@ -106,8 +111,8 @@ describe("config show", () => {
   ])("Config File %s → 400 telling to rerun config init", async (_name, rawConfig) => {
     const r = await run(["config", "show"], setup({ rawConfig }));
     expect(r.exitCode).toBe(2);
-    expect(r.json()).toMatchObject({ code: 400, data: null });
-    expect(r.json().message).toContain("config init");
+    expect(r.stdout).toBe("");
+    expect(r.stderr).toContain("config init");
   });
 
   it("warns when Config File or .env is wider than 600", async () => {
@@ -115,11 +120,7 @@ describe("config show", () => {
     chmodSync(join(dirs.home, ".are-you-happy-cli", "config.json"), 0o644);
     chmodSync(join(dirs.cwd, ".env"), 0o640);
     const r = await run(["config", "show"], dirs);
-    expect(r.json().data.warnings).toHaveLength(2);
-  });
-
-  it("text mode lists value and source", async () => {
-    const r = await run(["config", "show", "--format", "text"], setup());
-    expect(r.stdout).toMatch(/ARE_YOU_HAPPY_CLI_LANG\s*=\s*en\s*\(default\)/);
+    expect(r.exitCode).toBe(0);
+    expect(r.stderr.match(/^Warning:/gm)).toHaveLength(2);
   });
 });
