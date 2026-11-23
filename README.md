@@ -126,6 +126,7 @@ PR과 `main` push마다 GitHub Actions(`.github/workflows/ci.yml`)가 Node 22·2
 | `src/errors.ts` | HTTP 스타일 status → 종료 코드 매핑(`httpStatusToExitCode`) |
 | `src/settings/mask.ts` | 어떤 설정을 비밀로 보고 어떻게 마스킹할지 |
 | `src/settings/resolve.ts` | CLI가 아는 Environment Setting 이름 목록 |
+| `src/output.ts` | `--format`(json 봉투)을 갖는 명령 그룹(`FORMAT_GROUP`, 기본 `action`). 나머지 명령은 항상 text ([ADR-0003](docs/adr/0003-format-only-for-action.md)) |
 | `src/services/api.ts` | 샘플 Client Credentials(`happy-client` / `happy-secret`), Access Token·Refresh Token 상수와 TTL |
 
 ### `// SAMPLE:` — 템플릿 전환 시 삭제할 Sample Action 코드

@@ -62,6 +62,13 @@ describe("skeleton", () => {
     expect(r.stdout.trim().split("\n")).toHaveLength(1);
   });
 
+  it("--format before the action group is a root unknown option, reported by the action format rule", async () => {
+    const r = await run(["--format", "json", "action", "are-you", "Minsu"]);
+    expect(r.exitCode).toBe(2);
+    expect(r.json()).toMatchObject({ code: 400, data: null });
+    expect(r.json().message).toMatch(/unknown option '--format'/);
+  });
+
   it("unknown command → stderr with help hint, exit 2", async () => {
     const r = await run(["bogus"]);
     expect(r.exitCode).toBe(2);
