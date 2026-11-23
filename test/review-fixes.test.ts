@@ -24,12 +24,7 @@ describe("Client Credentials come from the cwd .env only", () => {
     const issued = await run(["auth", "issue-token"], { home, cwd, now: NOW, env });
     expect(issued.exitCode).toBe(0);
     const show = await run(["config", "show"], { home, cwd, env });
-    const row = show.json().data.settings.find((s: any) => s.key === "ARE_YOU_HAPPY_CLI_CLIENT_ID");
-    expect(row).toEqual({
-      key: "ARE_YOU_HAPPY_CLI_CLIENT_ID",
-      value: "happy-client",
-      source: ".env",
-    });
+    expect(show.stdout).toMatch(/^ARE_YOU_HAPPY_CLI_CLIENT_ID\s*= happy-client \(\.env\)$/m);
   });
 
   it("config.json ENVIRONMENTS cannot hold Client Credentials", async () => {
@@ -71,13 +66,13 @@ describe("invalid global flags are 400", () => {
   it("--lang fr", async () => {
     const r = await run(["--lang", "fr", "config", "show"]);
     expect(r.exitCode).toBe(2);
-    expect(r.json().message).toContain("fr");
+    expect(r.stderr).toContain("fr");
   });
 
   it("an invalid time zone from env still falls back with a warning", async () => {
     const r = await run(["config", "show"], { env: { ARE_YOU_HAPPY_CLI_TIMEZONE: "Bogus/Zone" } });
     expect(r.exitCode).toBe(0);
-    expect(r.json().data.warnings).toEqual([expect.stringContaining("Bogus/Zone")]);
+    expect(r.stderr).toContain("Bogus/Zone");
   });
 });
 

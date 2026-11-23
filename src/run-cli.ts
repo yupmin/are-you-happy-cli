@@ -18,7 +18,9 @@ import { isValidTimeZone } from "./timezone";
 /** The CLI as a function: parse `argv`, talk to the world only through `io`, return the exit code. */
 export async function runCli(argv: string[], io: Io): Promise<number> {
   const pre = prescan(argv);
-  const format = pre.format ?? (io.stdout.isTTY ? "text" : "json");
+  // Only the action group has an output format; every other command is text (ADR-0003).
+  const format =
+    pre.command === "action" ? (pre.format ?? (io.stdout.isTTY ? "text" : "json")) : "text";
   // Settings are resolved before commander is built so that --help is already translated.
   const paths = resolvePaths(io);
   let storeEnv: ReturnType<StoreEnv> | undefined;

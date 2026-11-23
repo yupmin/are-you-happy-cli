@@ -60,11 +60,7 @@ function configShow(ctx: Ctx): void {
       : [`  ${t.config.show.none}`]),
   ].join("\n");
 
-  ctx.result = {
-    message: config.path,
-    data: { configFile: config.path, settings: rows, fileSettings },
-    text,
-  };
+  ctx.result = { message: text };
 }
 
 async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
@@ -116,10 +112,7 @@ async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
       [envKey("TIMEZONE")]: timezone,
     },
   });
-  ctx.result = {
-    message: t.config.init.saved(config.path),
-    data: { saved: true, path: config.path, lang, timezone },
-  };
+  ctx.result = { message: t.config.init.saved(config.path) };
 }
 
 async function askTimezone({ io, t }: Ctx): Promise<string> {

@@ -68,6 +68,12 @@ describe("action are-you", () => {
     expect(r.stdout).toContain("Nov 22, 2026, 2:10 PM (UTC)");
   });
 
+  it("--format json after the action name beats TTY detection", async () => {
+    const u = await readyUser();
+    const r = await u.areYou("Minsu", { tty: true, argv: ["--format", "json"] });
+    expect(r.json().data.mood).toBe("happy");
+  });
+
   it("no Config File → 400 / exit 2 telling to run config init", async () => {
     const r = await run(["action", "are-you", "Minsu"]);
     expect(r.exitCode).toBe(2);

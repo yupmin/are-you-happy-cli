@@ -20,7 +20,6 @@ export const ko: LanguagePack = {
   label: { warning: "경고:", error: "오류:", hint: "힌트:" },
   program: {
     description: "가상 API에 누군가의 기분을 물어봅니다. Agent Skill용 샘플 CLI입니다.",
-    format: "출력 형식 (기본값: TTY면 text, 아니면 json)",
     verbose: "예상치 못한 오류의 stack trace 출력",
     lang: "언어 (ARE_YOU_HAPPY_CLI_LANG보다 우선)",
     timezone: "IANA 타임존 (ARE_YOU_HAPPY_CLI_TIMEZONE보다 우선)",
@@ -45,18 +44,12 @@ export const ko: LanguagePack = {
 예시:
   $ ${bin} config init
   $ ${bin} config init --lang ko --timezone Asia/Seoul
-  $ ${bin} config show
-
-에이전트용:
-  $ ${bin} config show --format json`,
+  $ ${bin} config show`,
     auth: `
 예시:
   $ ${bin} auth client
   $ ${bin} auth issue-token   # 선택: action이 없으면 자동 발급
-  $ ${bin} auth purge-token
-
-에이전트용:
-  $ ${bin} auth issue-token --format json`,
+  $ ${bin} auth purge-token`,
     action: `
 예시:
   $ ${bin} action are-you 민수
@@ -112,6 +105,7 @@ export const ko: LanguagePack = {
     },
   },
   action: {
+    format: "출력 형식 (기본값: TTY면 text, 아니면 json)",
     configRequired: "설정 파일이 없습니다.",
     // SAMPLE: action are-you 문자열.
     areYou: {

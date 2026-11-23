@@ -25,7 +25,7 @@ describe("built binary", () => {
   });
 
   it("unknown option exits 2", () => {
-    const r = exec("--nope");
+    const r = exec("action", "--nope");
     expect(r.status).toBe(2);
     expect(JSON.parse(r.stdout).code).toBe(400);
   });
@@ -59,6 +59,6 @@ describe("built binary", () => {
       encoding: "utf8",
     });
     expect(help.status, help.stderr).toBe(0);
-    expect(JSON.parse(help.stdout).data.help).toContain("action");
+    expect(help.stdout).toContain("action");
   }, 120_000);
 });

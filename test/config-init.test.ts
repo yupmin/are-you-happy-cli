@@ -19,7 +19,7 @@ describe("config init", () => {
     });
     expect(mode(file)).toBe(0o600);
     expect(mode(join(xdg, "are-you-happy-cli"))).toBe(0o700);
-    expect(r.json().data).toMatchObject({ path: file, lang: "ko", timezone: "Asia/Seoul" });
+    expect(r.stdout).toContain(file);
   });
 
   it("falls back to ~/.are-you-happy-cli without XDG_CONFIG_HOME", async () => {
@@ -30,7 +30,7 @@ describe("config init", () => {
 
   it("interactive: language → system timezone → confirm → save", async () => {
     const home = tempDir();
-    const r = await run(["config", "init", "--format", "text"], {
+    const r = await run(["config", "init"], {
       home,
       tty: true,
       answers: ["ko", "system", true],
@@ -46,7 +46,7 @@ describe("config init", () => {
 
   it("interactive: typed timezone is validated with Intl", async () => {
     const home = tempDir();
-    const r = await run(["config", "init", "--lang", "en", "--format", "text"], {
+    const r = await run(["config", "init", "--lang", "en"], {
       home,
       tty: true,
       answers: ["custom", "Mars/Olympus", "Asia/Seoul", true],
@@ -62,7 +62,7 @@ describe("config init", () => {
   it("rejects an unsupported --lang with 400", async () => {
     const r = await run(["config", "init", "--lang", "ja", "--timezone", "UTC"]);
     expect(r.exitCode).toBe(2);
-    expect(r.json().code).toBe(400);
+    expect(r.stderr).toContain("ja");
   });
 
   it("rejects an invalid --timezone with 400", async () => {
@@ -86,7 +86,7 @@ describe("config init", () => {
     );
     const r = await run(["config", "init", "--lang", "ko", "--timezone", "UTC"], { home });
     expect(r.exitCode).toBe(0);
-    expect(r.json().data.warnings).toHaveLength(1);
+    expect(r.stderr.match(/^경고:/gm)).toHaveLength(1);
     expect(readConfig(join(dir, "config.json"))).toEqual({
       ENVIRONMENTS: { ARE_YOU_HAPPY_CLI_LANG: "ko", ARE_YOU_HAPPY_CLI_TIMEZONE: "UTC" },
       mode: "CRAZY",
@@ -98,14 +98,11 @@ describe("config init", () => {
     await run(["config", "init", "--lang", "en", "--timezone", "UTC"], { home });
     const file = join(home, ".are-you-happy-cli", "config.json");
     const before = readFileSync(file, "utf8");
-    const r = await run(
-      ["config", "init", "--lang", "ko", "--timezone", "UTC", "--format", "text"],
-      {
-        home,
-        tty: true,
-        answers: [false],
-      },
-    );
+    const r = await run(["config", "init", "--lang", "ko", "--timezone", "UTC"], {
+      home,
+      tty: true,
+      answers: [false],
+    });
     expect(r.exitCode).toBe(0);
     expect(r.asked[0]).toMatch(/overwrite|덮어/i);
     expect(readFileSync(file, "utf8")).toBe(before);
@@ -113,7 +110,7 @@ describe("config init", () => {
 
   it("Ctrl+C at the confirm prompt → 130 and nothing written", async () => {
     const home = tempDir();
-    const r = await run(["config", "init", "--format", "text"], {
+    const r = await run(["config", "init"], {
       home,
       tty: true,
       answers: ["ko", "system", { cancel: true }],
@@ -126,13 +123,13 @@ describe("config init", () => {
   it("after saving, --help uses the saved language", async () => {
     const home = tempDir();
     await run(["config", "init", "--lang", "ko", "--timezone", "UTC"], { home });
-    const r = await run(["--help", "--format", "text"], { home });
+    const r = await run(["--help"], { home });
     expect(r.stdout).toContain("설정 파일");
   });
 
-  it("group without subcommand → translated 400", async () => {
+  it("group without subcommand → 400 with its help on stderr", async () => {
     const r = await run(["config"], { env: { ARE_YOU_HAPPY_CLI_LANG: "ko" } });
     expect(r.exitCode).toBe(2);
-    expect(r.json().message).toBe("하위 명령이 필요합니다.");
+    expect(r.stderr).toContain("Usage:");
   });
 });

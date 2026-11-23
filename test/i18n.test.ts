@@ -8,31 +8,32 @@ describe("Language Pack", () => {
   });
 
   it("ARE_YOU_HAPPY_CLI_LANG=ko → Korean help", async () => {
-    const r = await run(["--help", "--format", "text"], { env: { ARE_YOU_HAPPY_CLI_LANG: "ko" } });
+    const r = await run(["--help"], { env: { ARE_YOU_HAPPY_CLI_LANG: "ko" } });
     expect(r.stdout).toContain("설정 파일");
   });
 
   it("ARE_YOU_HAPPY_CLI_LANG=en → English help", async () => {
-    const r = await run(["--help", "--format", "text"], { env: { ARE_YOU_HAPPY_CLI_LANG: "en" } });
+    const r = await run(["--help"], { env: { ARE_YOU_HAPPY_CLI_LANG: "en" } });
     expect(r.stdout).toContain("manage the Config File");
   });
 
   it("unsupported language falls back to en with a warning on stderr (text)", async () => {
-    const r = await run(["--help", "--format", "text"], { env: { ARE_YOU_HAPPY_CLI_LANG: "ja" } });
+    const r = await run(["--help"], { env: { ARE_YOU_HAPPY_CLI_LANG: "ja" } });
     expect(r.stdout).toContain("manage the Config File");
     expect(r.stderr).toMatch(/ja/);
   });
 
-  it("unsupported language warning goes to data.warnings (json)", async () => {
-    const r = await run(["--help"], { env: { ARE_YOU_HAPPY_CLI_LANG: "ja" } });
+  it("unsupported language warning goes to data.warnings (action json)", async () => {
+    const r = await run(["action", "--help"], { env: { ARE_YOU_HAPPY_CLI_LANG: "ja" } });
     expect(r.json().data.warnings).toEqual([expect.stringContaining("ja")]);
   });
 
-  it("group help shows human and agent examples from the Language Pack", async () => {
-    const r = await run(["config", "--help", "--format", "text"], {
-      env: { ARE_YOU_HAPPY_CLI_LANG: "ko" },
-    });
-    expect(r.stdout).toContain("예시");
-    expect(r.stdout).toContain("--format json");
+  it("group help shows examples from the Language Pack; only action has agent examples", async () => {
+    const env = { ARE_YOU_HAPPY_CLI_LANG: "ko" };
+    const config = await run(["config", "--help"], { env });
+    expect(config.stdout).toContain("예시");
+    expect(config.stdout).not.toContain("--format");
+    const action = await run(["action", "--help"], { env, tty: true });
+    expect(action.stdout).toContain("--format json");
   });
 });

@@ -9,7 +9,7 @@ const SECRET = "ARE_YOU_HAPPY_CLI_CLIENT_SECRET";
 describe("auth client", () => {
   it("asks ID then SECRET and saves them to the cwd .env with mode 600", async () => {
     const cwd = tempDir();
-    const r = await run(["auth", "client", "--format", "text"], {
+    const r = await run(["auth", "client"], {
       cwd,
       tty: true,
       answers: ["happy-client", "happy-secret"],
@@ -32,7 +32,7 @@ describe("auth client", () => {
   it("existing credentials: warns, asks, and replaces in place when confirmed", async () => {
     const cwd = tempDir();
     writeFileSync(join(cwd, ".env"), `${ID}=old\nOTHER=1\n${SECRET}=old-secret\n`);
-    const r = await run(["auth", "client", "--format", "text"], {
+    const r = await run(["auth", "client"], {
       cwd,
       tty: true,
       answers: [true, "new", "new-secret"],
@@ -55,7 +55,7 @@ describe("auth client", () => {
   it("non-TTY → 400, interactive only", async () => {
     const r = await run(["auth", "client"]);
     expect(r.exitCode).toBe(2);
-    expect(r.json().code).toBe(400);
+    expect(r.stderr).toContain("interactive only");
   });
 
   it("rejects empty ID and SECRET", async () => {

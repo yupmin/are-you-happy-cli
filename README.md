@@ -35,7 +35,9 @@ npx are-you-happy-cli action are-you 민수
 
 ## 명령
 
-전역 옵션: `--format <text|json>`, `--lang <en|ko>`, `--timezone <IANA>`, `--verbose`, `--version`, `-h/--help`
+전역 옵션: `--lang <en|ko>`, `--timezone <IANA>`, `--verbose`, `--version`, `-h/--help`
+
+`action` 그룹 옵션: `--format <text|json>`
 
 | 명령 | 동작 |
 |---|---|
@@ -84,8 +86,8 @@ Config File 예:
 
 ## 출력과 종료 코드
 
-- 포맷: `--format` 명시 > stdout이 TTY면 `text`, 아니면 `json`. 에이전트는 항상 `--format json`을 명시합니다.
-- `json`: 성공·실패 모두 stdout에 봉투 한 번 — `{ code, message, data }`. 실패 시 `data: null`, 경고는 `data.warnings`. 오류도 stdout으로 내는 이유는 [ADR-0001](docs/adr/0001-json-envelope-on-stdout.md) 참고.
+- 포맷은 `action` 그룹에만 있습니다: `--format` 명시 > stdout이 TTY면 `text`, 아니면 `json`. 에이전트는 `action`을 호출할 때 `--format json`을 명시합니다. `config`·`auth`·`--help`·`--version`은 항상 `text`입니다([ADR-0003](docs/adr/0003-format-only-for-action.md)).
+- `json`(`action`만): 성공·실패 모두 stdout에 봉투 한 번 — `{ code, message, data }`. 실패 시 `data: null`, 경고는 `data.warnings`. 오류도 stdout으로 내는 이유는 [ADR-0001](docs/adr/0001-json-envelope-on-stdout.md) 참고.
 - `text`: 결과는 stdout, 경고·오류는 stderr.
 
 | `code` | 종료 코드 |
