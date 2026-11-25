@@ -1,6 +1,6 @@
 import { BIN_NAME as bin } from "../project";
 // SAMPLE: Mood type for the action.areYou strings.
-import type { Mood } from "../services/api";
+import type { Mood } from "../services/sample-mood";
 
 export const en = {
   meta: { name: "English" },

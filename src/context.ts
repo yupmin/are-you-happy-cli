@@ -1,6 +1,7 @@
 import type { Io } from "./io";
 import type { Lang, LanguagePack } from "./locales";
 import type { Output, Success } from "./output";
+import type { TokenIssuer } from "./services/token-issuer";
 import type { ConfigFileStore } from "./settings/config-file";
 import type { DotenvStore } from "./settings/dotenv";
 import type { Settings } from "./settings/resolve";
@@ -18,6 +19,8 @@ export interface Ctx {
   /** The cwd .env as found at startup. */
   dotenv: DotenvStore;
   tokenState: TokenStateStore;
+  /** Issues and refreshes an Access Token. Sample Action calls are not on this. */
+  issuer: TokenIssuer;
   /** Validated IANA time zone used for every displayed time. */
   timezone: string;
   /** Set by the command that ran; rendered once after parsing. */

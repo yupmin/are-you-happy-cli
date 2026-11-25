@@ -1,7 +1,7 @@
 import type { Command } from "@commander-js/extra-typings";
 import type { Ctx } from "../context";
 import { CliError, REASON } from "../errors";
-import * as api from "../services/api";
+import { getMood } from "../services/sample-mood";
 import { callWithAccessToken } from "../services/token-flow";
 import { formatIsoInTimeZone } from "../time";
 
@@ -30,7 +30,7 @@ export function registerAction(group: Command, ctx: Ctx): void {
 // SAMPLE: action are-you <name>
 async function areYou(ctx: Ctx, name: string): Promise<void> {
   const { io, t, timezone } = ctx;
-  const { mood } = await callWithAccessToken(ctx, (token) => api.getMood(token, name, io.random));
+  const { mood } = await callWithAccessToken(ctx, (token) => getMood(token, name, io.random));
   const now = io.now();
   const message = t.action.areYou.message(name, mood);
   ctx.result = {

@@ -7,6 +7,7 @@ import { FORMAT_GROUP, Output } from "./output";
 import { prescan } from "./prescan";
 import { buildProgram, type OutputSink } from "./program";
 import { envKey } from "./project";
+import { sampleIssuer } from "./services/sample-issuer";
 import { ConfigFileStore } from "./settings/config-file";
 import { DotenvStore } from "./settings/dotenv";
 import { resolvePaths } from "./settings/paths";
@@ -62,7 +63,18 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const timezone = resolveTimeZone(settings.TIMEZONE?.value, io, (value, fallback) =>
     out.warn(t.warnings.invalidTimezone(value, fallback)),
   );
-  const ctx: Ctx = { io, t, lang, out, settings, config, dotenv, tokenState, timezone };
+  const ctx: Ctx = {
+    io,
+    t,
+    lang,
+    out,
+    settings,
+    config,
+    dotenv,
+    tokenState,
+    timezone,
+    issuer: sampleIssuer,
+  };
   const sink: OutputSink = { stdout: "", stderr: "" };
 
   try {
