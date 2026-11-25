@@ -1,6 +1,6 @@
 import type { Command } from "@commander-js/extra-typings";
 import { type Ctx, cancel } from "../context";
-import { CliError } from "../errors";
+import { CliError, REASON } from "../errors";
 import { envKey } from "../project";
 import { issueAndSave } from "../services/token-flow";
 
@@ -43,7 +43,8 @@ function authPurgeToken(ctx: Ctx): void {
 /** Interactive only: secrets never come in through flags (shell history, process list). */
 async function authClient(ctx: Ctx): Promise<void> {
   const { io, t, out, dotenv } = ctx;
-  if (!io.interactive) throw new CliError(400, t.auth.client.interactiveOnly);
+  if (!io.interactive)
+    throw new CliError(400, t.auth.client.interactiveOnly, REASON.interactiveOnly);
 
   const current = dotenv.read() ?? {};
   if (current[CLIENT_ID_KEY] !== undefined || current[CLIENT_SECRET_KEY] !== undefined) {

@@ -87,7 +87,7 @@ Config File 예:
 ## 출력과 종료 코드
 
 - 포맷은 `action` 그룹에만 있습니다: `--format` 명시 > stdout이 TTY면 `text`, 아니면 `json`. 에이전트는 `action`을 호출할 때 `--format json`을 명시합니다. `config`·`auth`·`--help`·`--version`은 항상 `text`입니다([ADR-0003](docs/adr/0003-format-only-for-action.md)).
-- `json`(`action`만): 성공·실패 모두 stdout에 봉투 한 번 — `{ code, message, data }`. 실패 시 `data: null`, 경고는 `data.warnings`. 오류도 stdout으로 내는 이유는 [ADR-0001](docs/adr/0001-json-envelope-on-stdout.md) 참고.
+- `json`(`action`만): 성공·실패 모두 stdout에 봉투 한 번. 성공은 `{ code, message, data }`이고 경고는 `data.warnings`. 실패는 `{ code, message, reason, data }`이며 `data`는 `{ warnings }`다. `reason`은 언어와 무관한 코드(`config_invalid`, `token_invalid`, `no_credentials` 등)다. 오류도 stdout으로 내는 이유는 [ADR-0001](docs/adr/0001-json-envelope-on-stdout.md), 실패 모양은 [ADR-0004](docs/adr/0004-failure-warnings-and-reason.md) 참고.
 - `text`: 결과는 stdout, 경고·오류는 stderr.
 
 | `code` | 종료 코드 |

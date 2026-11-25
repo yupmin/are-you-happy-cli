@@ -1,5 +1,5 @@
 import { styleText } from "node:util";
-import { httpStatusToExitCode } from "./errors";
+import { httpStatusToExitCode, type Reason } from "./errors";
 import type { Io, OutStream } from "./io";
 
 export type Format = "text" | "json";
@@ -17,8 +17,10 @@ export interface Success {
 }
 
 /**
- * The renderer. json: exactly one `{ code, message, data }` envelope on stdout (ADR-0001).
- * text: results on stdout, warnings and errors on stderr.
+ * The renderer. json: exactly one envelope on stdout (ADR-0001, ADR-0004).
+ * Success: `{ code, message, data }` with `data.warnings`.
+ * Failure: `{ code, message, reason, data }` and `data` is `{ warnings }` (not null).
+ * text: results on stdout, warnings and errors on stderr. `reason` is not printed.
  */
 export class Output {
   private readonly warnings: string[] = [];
@@ -46,9 +48,14 @@ export class Output {
     return 0;
   }
 
-  failure(status: number, message: string, hint?: string): number {
+  failure(status: number, message: string, reason: Reason, hint?: string): number {
     if (this.format === "json") {
-      this.envelope(status, hint ? `${message} ${hint}` : message, null);
+      this.envelope(
+        status,
+        hint ? `${message} ${hint}` : message,
+        { warnings: this.warnings },
+        reason,
+      );
     } else {
       const err = this.io.stderr;
       err.write(`${this.paint(err, "red", this.labels.error)} ${message}\n`);
@@ -62,8 +69,9 @@ export class Output {
     if (this.format === "text" && text) this.io[stream].write(text);
   }
 
-  private envelope(code: number, message: string, data: unknown): void {
-    this.io.stdout.write(`${JSON.stringify({ code, message, data })}\n`);
+  private envelope(code: number, message: string, data: unknown, reason?: Reason): void {
+    const body = reason === undefined ? { code, message, data } : { code, message, reason, data };
+    this.io.stdout.write(`${JSON.stringify(body)}\n`);
   }
 
   private paint(stream: OutStream, style: Style, text: string): string {

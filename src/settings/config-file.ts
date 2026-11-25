@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { CliError } from "../errors";
+import { CliError, REASON } from "../errors";
 import type { LanguagePack } from "../locales";
 import { writePrivateFile } from "./private-file";
 import { SnapshotStore, type StoreEnv } from "./store";
@@ -31,6 +31,11 @@ export class ConfigFileStore extends SnapshotStore<Config> {
   }
 
   protected brokenError(t: LanguagePack): CliError {
-    return new CliError(400, t.errors.configInvalid(this.path), t.hints.runConfigInit);
+    return new CliError(
+      400,
+      t.errors.configInvalid(this.path),
+      REASON.configInvalid,
+      t.hints.runConfigInit,
+    );
   }
 }

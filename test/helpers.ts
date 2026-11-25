@@ -91,6 +91,6 @@ export async function run(argv: string[], opts: RunOptions = {}) {
     stderr,
     asked: prompter.asked,
     rejected: prompter.rejected,
-    json: () => JSON.parse(stdout) as { code: number; message: string; data: any },
+    json: () => JSON.parse(stdout) as { code: number; message: string; reason?: string; data: any },
   };
 }

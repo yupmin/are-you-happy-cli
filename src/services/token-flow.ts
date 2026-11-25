@@ -1,5 +1,5 @@
 import type { Ctx } from "../context";
-import { CliError } from "../errors";
+import { CliError, REASON, type Reason } from "../errors";
 import type { TokenState } from "../settings/token-state";
 import * as api from "./api";
 import { ApiError, type TokenResponse } from "./api";
@@ -10,11 +10,16 @@ export interface ClientCredentials {
 }
 
 /** Runs `call`; an ApiError from the API becomes a CliError with the given message and hint. */
-async function mapApiError<T>(call: () => Promise<T>, message: string, hint: string): Promise<T> {
+async function mapApiError<T>(
+  call: () => Promise<T>,
+  message: string,
+  reason: Reason,
+  hint: string,
+): Promise<T> {
   try {
     return await call();
   } catch (err) {
-    if (err instanceof ApiError) throw new CliError(err.status, message, hint);
+    if (err instanceof ApiError) throw new CliError(err.status, message, reason, hint);
     throw err;
   }
 }
@@ -50,10 +55,18 @@ export async function issueAndSave(
   creds = readClientCredentials(ctx),
 ): Promise<TokenState> {
   const { t, io } = ctx;
-  if (!creds) throw new CliError(401, t.auth.issueToken.noCredentials, t.hints.runAuthClient);
+  if (!creds) {
+    throw new CliError(
+      401,
+      t.auth.issueToken.noCredentials,
+      REASON.noCredentials,
+      t.hints.runAuthClient,
+    );
+  }
   const res = await mapApiError(
     () => api.issueToken(creds.clientId, creds.clientSecret),
     t.auth.issueToken.rejected,
+    REASON.credentialsRejected,
     t.hints.runAuthClient,
   );
   return save(ctx, toTokenState(res, creds.clientId, io.now()));
@@ -100,5 +113,10 @@ export async function callWithAccessToken<T>(
   call: (accessToken: string) => Promise<T>,
 ): Promise<T> {
   const accessToken = await getAccessToken(ctx);
-  return mapApiError(() => call(accessToken), ctx.t.token.rejected, ctx.t.hints.runIssueToken);
+  return mapApiError(
+    () => call(accessToken),
+    ctx.t.token.rejected,
+    REASON.tokenRejected,
+    ctx.t.hints.runIssueToken,
+  );
 }
