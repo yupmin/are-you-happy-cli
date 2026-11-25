@@ -49,7 +49,7 @@ Exit codes (every command):
 | `auth client` | **Interactive only. You cannot run it.** Registers Client Credentials into `./.env`. |
 | `auth issue-token` | Issues an Access Token from the Client Credentials and saves the Token State. |
 | `auth purge-token` | Deletes the Token State. |
-| `action are-you <name>` | Returns `data: { name, mood, message, checkedAt }`. `mood` ∈ `happy\|sad\|angry\|excited\|tired`. `message` is localized (en/ko). |
+| `action are-you <name>` | Returns `data: { name, mood, message, checkedAt, warnings }`. `mood` ∈ `happy\|sad\|angry\|excited\|tired`. `message` is localized (en/ko). |
 
 `action are-you` issues an Access Token automatically when there is no Token State (and reuses it until it expires), refreshes an expired one, and reissues the token when the Client ID in `.env` changed since issue. Each case shows up in `data.warnings`; no action needed.
 
@@ -70,8 +70,8 @@ Switch on `reason` from an `action --format json` failure. Apply at most one rec
 | `unsupported_lang` | Pass `--lang en` or `--lang ko`. |
 | `invalid_timezone` | Pass a valid IANA `--timezone`. |
 | `dotenv_invalid` | The cwd `.env` could not be parsed. Ask the user to fix that file. |
-| `interactive_only` | The user must run `auth client` in a terminal. You cannot run it. |
-| `noninteractive` | Re-run `config init` with both `--lang` and `--timezone`. |
+
+`auth client` and `config init` are text, so they have no `reason`. A non-TTY `auth client` exits 2: ask the user to run it in a terminal. A non-TTY `config init` without both `--lang` and `--timezone` exits 2: re-run it with both flags.
 
 Never ask the user to paste the Client Secret (or any token) into chat. Credentials go in only via `auth client`, typed by the user.
 
@@ -95,7 +95,7 @@ npx are-you-happy-cli action are-you Minsu --format json
 }
 ```
 
-Failure (any language):
+Failure example (English `message`; `reason` is the same in every language):
 
 ```json
 {

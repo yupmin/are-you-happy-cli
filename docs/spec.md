@@ -95,7 +95,7 @@ Config File 형식:
 - json: stdout에 봉투 한 번 (ADR-0001, [ADR-0004](adr/0004-failure-warnings-and-reason.md))
   - 성공: `{ code, message, data }`. `data.warnings`는 경고 배열(없으면 `[]`)
   - 실패: `{ code, message, reason, data }`. `data`는 `{ warnings }`이고 `null`이 아니다. `reason`은 언어와 무관한 실패 코드다. `message`는 Language Pack 문장이고, hint가 있으면 한 칸 뒤에 붙는다
-  - `reason`: `config_missing`, `config_invalid`, `dotenv_invalid`, `token_invalid`, `no_credentials`, `credentials_rejected`, `token_rejected`, `unsupported_lang`, `invalid_timezone`, `interactive_only`, `noninteractive`, `usage`, `unexpected`
+  - `reason`: `config_missing`, `config_invalid`, `dotenv_invalid`, `token_invalid`, `no_credentials`, `credentials_rejected`, `token_rejected`, `unsupported_lang`, `invalid_timezone`, `interactive_only`, `noninteractive`, `usage`, `unexpected`. json 실패 봉투에만 있다. `interactive_only`·`noninteractive`는 text 전용 명령(`auth client`, `config init`)이라 봉투에 나오지 않는다.
   - `code`: HTTP 스타일 숫자(`200`, `400`, `401`, `500`)
   - 시각은 ISO8601 + 설정 타임존 오프셋 (`2026-11-22T23:10:00+09:00`)
   - 색상·ANSI 없음
