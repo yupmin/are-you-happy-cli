@@ -4,7 +4,7 @@ import { CliError } from "../errors";
 import { LANGUAGES, type Lang, packs } from "../locales";
 import { envKey } from "../project";
 import { maskSetting } from "../settings/mask";
-import { SETTING_NAMES } from "../settings/resolve";
+import { type Resolved, SETTING_NAMES, type SettingName } from "../settings/resolve";
 import { isValidTimeZone } from "../timezone";
 
 interface GlobalFlags {
@@ -33,7 +33,7 @@ function configShow(ctx: Ctx): void {
   dotenv.check();
 
   const rows = SETTING_NAMES.flatMap((name) => {
-    const resolved = settings[name];
+    const resolved = shownSetting(ctx, name, settings[name]);
     if (!resolved) return [];
     const key = envKey(name);
     return [{ key, value: maskSetting(key, resolved.value), source: resolved.source }];
@@ -61,6 +61,23 @@ function configShow(ctx: Ctx): void {
   ].join("\n");
 
   ctx.result = { message: text };
+}
+
+/**
+ * Language and time zone are validated after precedence. A rejected shell, .env, or Config File
+ * value is replaced by the default (ctx.lang / ctx.timezone); config show reports that default.
+ */
+function shownSetting(
+  ctx: Ctx,
+  name: SettingName,
+  resolved: Resolved | undefined,
+): Resolved | undefined {
+  if (!resolved) return undefined;
+  if (name === "LANG" && resolved.value !== ctx.lang) return { value: ctx.lang, source: "default" };
+  if (name === "TIMEZONE" && resolved.value !== ctx.timezone) {
+    return { value: ctx.timezone, source: "default" };
+  }
+  return resolved;
 }
 
 async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {

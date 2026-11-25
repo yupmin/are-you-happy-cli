@@ -44,6 +44,7 @@ Config File 형식:
 - 우선순위: **플래그 > 셸 환경변수 > cwd `.env` > `config.json`의 `ENVIRONMENTS` > 기본값**
 - commander 정의 **전에** 설정을 해석해 언어를 정한다 → `ARE_YOU_HAPPY_CLI_LANG=en are-you-happy-cli --help`는 영어.
 - 기본값: 언어 `en`, 타임존 = 시스템 타임존.
+- 플래그의 잘못된 `--lang`·`--timezone`은 `400`. 셸 환경변수·cwd `.env`·Config File의 잘못된 언어(Language Pack 없음)나 타임존은 경고 후 기본값으로 대체한다. 더 낮은 층의 유효한 값으로 내려가지 않는다.
 
 ## 명령
 
@@ -52,7 +53,7 @@ Config File 형식:
 | 명령 | 동작 |
 |---|---|
 | `config init` | 언어 선택(존재하는 **Language Pack**만: en, ko) → 타임존(시스템 사용 또는 직접 입력, `Intl`로 검증) → 확인 후 저장. 플래그 `--lang`, `--timezone`로 비대화형 실행 가능. 기존 값 덮어쓰기 시 경고 |
-| `config show` | 최종 설정값과 출처(flag / shell env / .env / config.json / default). 키에 `SECRET`·`TOKEN` 포함 시 앞 4자 + `****` 마스킹. Client ID는 노출. 마스킹 규칙은 `// CUSTOMIZE:` 함수 하나 |
+| `config show` | 검증을 거친 최종 설정값과 출처(flag / shell env / .env / config.json / default). 언어·타임존이 기본값으로 대체되면 출처는 `default`이고, 경고가 버린 원문을 알린다. 키에 `SECRET`·`TOKEN` 포함 시 앞 4자 + `****` 마스킹. Client ID는 노출. 마스킹 규칙은 `// CUSTOMIZE:` 함수 하나 |
 | `auth client` | **대화형 전용.** `ID:` 입력 → `SECRET:` 입력(화면에 비표시) → `.env` 저장. 플래그 없음. 비TTY면 `400`. 기존 값 덮어쓰기 시 경고 |
 | `auth issue-token` | `.env`의 Client Credentials를 고정값(`happy-client` / `happy-secret`, `// CUSTOMIZE:`)과 비교, 불일치 시 `401`. 성공 시 Token State 저장 |
 | `auth purge-token` | Token State 삭제 |

@@ -70,6 +70,48 @@ describe("config show", () => {
     expect(setting(r.stdout, "LANG")).toMatchObject({ value: "ko", source: "config.json" });
   });
 
+  it("rejected lang and timezone are shown as the default, and the warning names the raw value", async () => {
+    const r = await run(["config", "show"], {
+      ...setup({
+        config: {
+          ENVIRONMENTS: {
+            ARE_YOU_HAPPY_CLI_LANG: "ja",
+            ARE_YOU_HAPPY_CLI_TIMEZONE: "Bogus/Zone",
+          },
+        },
+      }),
+      systemTimeZone: "Europe/Paris",
+    });
+    expect(r.exitCode).toBe(0);
+    expect(setting(r.stdout, "LANG")).toEqual({
+      key: "ARE_YOU_HAPPY_CLI_LANG",
+      value: "en",
+      source: "default",
+    });
+    expect(setting(r.stdout, "TIMEZONE")).toEqual({
+      key: "ARE_YOU_HAPPY_CLI_TIMEZONE",
+      value: "Europe/Paris",
+      source: "default",
+    });
+    expect(r.stderr).toContain("ja");
+    expect(r.stderr).toContain("Bogus/Zone");
+    expect(r.stdout).not.toContain("Bogus/Zone");
+  });
+
+  it("a rejected shell time zone does not fall through to a valid .env value", async () => {
+    const r = await run(["config", "show"], {
+      ...setup({ dotenv: "ARE_YOU_HAPPY_CLI_TIMEZONE=Asia/Tokyo\n" }),
+      env: { ARE_YOU_HAPPY_CLI_TIMEZONE: "Not/AZone" },
+      systemTimeZone: "Europe/Paris",
+    });
+    expect(setting(r.stdout, "TIMEZONE")).toEqual({
+      key: "ARE_YOU_HAPPY_CLI_TIMEZONE",
+      value: "Europe/Paris",
+      source: "default",
+    });
+    expect(r.stderr).toContain("Not/AZone");
+  });
+
   it("never searches parent folders for .env", async () => {
     const parent = tempDir();
     writeFileSync(join(parent, ".env"), "ARE_YOU_HAPPY_CLI_LANG=ko\n");
