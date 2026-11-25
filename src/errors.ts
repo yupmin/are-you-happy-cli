@@ -12,6 +12,7 @@ export const REASON = {
   tokenRejected: "token_rejected",
   unsupportedLang: "unsupported_lang",
   invalidTimezone: "invalid_timezone",
+  invalidApiUrl: "invalid_api_url",
   interactiveOnly: "interactive_only",
   noninteractive: "noninteractive",
   usage: "usage",

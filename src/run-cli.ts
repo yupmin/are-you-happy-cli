@@ -7,7 +7,9 @@ import { FORMAT_GROUP, Output } from "./output";
 import { prescan } from "./prescan";
 import { buildProgram, type OutputSink } from "./program";
 import { envKey } from "./project";
+import { createHttpTokenIssuer, parseHttpBaseUrl } from "./services/http-token-issuer";
 import { sampleIssuer } from "./services/sample-issuer";
+import type { TokenIssuer } from "./services/token-issuer";
 import { ConfigFileStore } from "./settings/config-file";
 import { DotenvStore } from "./settings/dotenv";
 import { resolvePaths } from "./settings/paths";
@@ -63,6 +65,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const timezone = resolveTimeZone(settings.TIMEZONE?.value, io, (value, fallback) =>
     out.warn(t.warnings.invalidTimezone(value, fallback)),
   );
+  const issuer = issuerFor(settings, t.errors.invalidApiUrl);
   const ctx: Ctx = {
     io,
     t,
@@ -73,7 +76,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
     dotenv,
     tokenState,
     timezone,
-    issuer: sampleIssuer,
+    issuer,
   };
   const sink: OutputSink = { stdout: "", stderr: "" };
 
@@ -93,6 +96,29 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
       pre.verbose ? undefined : t.errors.rerunVerbose,
     );
   }
+}
+
+/**
+ * Unset API_URL keeps the sample issuer. A set but unusable URL is refused only when a token
+ * is issued or refreshed, so `config show` and `--help` still run. The refusal is a CliError,
+ * not an ApiError, so refresh does not fall through to reissue and the value is not echoed.
+ */
+export function issuerFor(settings: Ctx["settings"], invalidApiUrl: string): TokenIssuer {
+  const raw = settings.API_URL?.value;
+  if (raw === undefined) return sampleIssuer;
+  if (!parseHttpBaseUrl(raw)) {
+    const reject = async (): Promise<never> => {
+      throw new CliError(400, invalidApiUrl, REASON.invalidApiUrl);
+    };
+    return { issueToken: reject, refreshAccessToken: reject };
+  }
+  const clientId = settings.CLIENT_ID?.value;
+  const clientSecret = settings.CLIENT_SECRET?.value;
+  return createHttpTokenIssuer({
+    baseUrl: raw,
+    clientId: clientId && clientSecret ? clientId : undefined,
+    clientSecret: clientId && clientSecret ? clientSecret : undefined,
+  });
 }
 
 function resolveTimeZone(
