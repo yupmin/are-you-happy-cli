@@ -147,69 +147,6 @@ describe("action are-you", () => {
   });
 });
 
-describe("action are-you: token recovery", () => {
-  const LATER = new Date("2026-11-22T15:10:00Z"); // exactly expiresAt of the token issued at NOW
-
-  it("expired → refreshes with the Refresh Token, updates Token State, warns", async () => {
-    const u = await readyUser();
-    const r = await u.areYou("Minsu", { now: LATER });
-    expect(r.exitCode).toBe(0);
-    expect(r.json().data.warnings).toEqual([expect.stringMatching(/refresh/i)]);
-    expect(u.token().expiresAt).toBe("2026-11-22T16:10:00.000Z");
-  });
-
-  it("not yet expired → no refresh, no warning", async () => {
-    const u = await readyUser();
-    const r = await u.areYou("Minsu", { now: new Date(LATER.getTime() - 1000) });
-    expect(r.json().data.warnings).toEqual([]);
-    expect(u.token().expiresAt).toBe("2026-11-22T15:10:00.000Z");
-  });
-
-  it("refresh fails → re-issues with Client Credentials", async () => {
-    const u = await readyUser();
-    u.setToken({ refreshToken: "stale" });
-    const r = await u.areYou("Minsu", { now: LATER });
-    expect(r.exitCode).toBe(0);
-    expect(r.json().data.warnings).toEqual([expect.stringMatching(/re-issued/i)]);
-    expect(u.token()).toMatchObject({
-      refreshToken: "it.me.and.you.again",
-      expiresAt: "2026-11-22T16:10:00.000Z",
-    });
-  });
-
-  it("refresh and re-issue both fail → 401 / exit 3", async () => {
-    const u = await readyUser();
-    u.setToken({ refreshToken: "stale" });
-    writeFileSync(
-      join(u.cwd, ".env"),
-      "ARE_YOU_HAPPY_CLI_CLIENT_ID=happy-client\nARE_YOU_HAPPY_CLI_CLIENT_SECRET=wrong\n",
-    );
-    const r = await u.areYou("Minsu", { now: LATER });
-    expect(r.exitCode).toBe(3);
-    expect(r.json()).toMatchObject({
-      code: 401,
-      reason: "credentials_rejected",
-      data: { warnings: [] },
-    });
-  });
-
-  it("Token State issued for another Client ID → treated as invalid, re-issued", async () => {
-    const u = await readyUser();
-    u.setToken({ clientId: "someone-else" });
-    const r = await u.areYou("Minsu");
-    expect(r.exitCode).toBe(0);
-    expect(r.json().data.warnings).toEqual([expect.stringMatching(/Client ID/)]);
-    expect(u.token().clientId).toBe("happy-client");
-  });
-
-  it("warnings go to stderr in text mode", async () => {
-    const u = await readyUser();
-    const r = await u.areYou("Minsu", { now: LATER, argv: ["--format", "text"] });
-    expect(r.stdout).toContain("Minsu is happy.");
-    expect(r.stderr).toMatch(/refresh/i);
-  });
-});
-
 describe("action json failure envelope", () => {
   it("config_invalid is the same reason in en and ko", async () => {
     const home = tempDir();

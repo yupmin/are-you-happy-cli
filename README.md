@@ -137,6 +137,6 @@ PR과 `main` push마다 GitHub Actions(`.github/workflows/ci.yml`)가 Node 22·2
 | `src/services/sample-mood.ts` | Mood 엔드포인트(`MOODS`, `getMood`). `TokenIssuer` 밖 |
 | `src/services/korean.ts` | 은/는 조사 선택 |
 | `src/locales/en.ts`, `ko.ts` | `action.areYou` 문자열, 한국어 Mood |
-| `test/action.test.ts`, `test/korean.test.ts` | Sample Action 테스트 (토큰 복구 테스트는 새 action으로 옮김) |
+| `test/action.test.ts`, `test/korean.test.ts` | Sample Action 테스트 (Mood·문장). 토큰 흐름 테스트 `test/token-flow.test.ts`는 남김 |
 
 인증(`auth`)과 설정(`config`) 로직은 Sample Action에 속하지 않으므로 남겨 둡니다. 전환 후에는 `skills/are-you-happy-cli/SKILL.md`도 새 CLI에 맞게 고쳐 주세요.
