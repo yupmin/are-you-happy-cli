@@ -13,19 +13,25 @@ const quote = (value: string) => (/^[\w.:/@+-]*$/.test(value) ? value : JSON.str
 
 /** The cwd .env, read once at startup. */
 export class DotenvStore extends SnapshotStore<Dotenv> {
-  /** Sets `updates`, preserving every other line. Mode 600. */
+  /**
+   * Sets `updates`, preserving every other line. Mode 600.
+   * Every assignment of an updated key (including duplicates and `export`) takes the new value,
+   * so a later duplicate cannot shadow it. `parseEnv` keeps the last value.
+   */
   update(updates: Dotenv): void {
     const lines = (readIfExists(this.path) ?? "").split("\n");
     if (lines.at(-1) === "") lines.pop();
     const pending = new Map(Object.entries(updates));
+    const seen = new Set<string>();
     const next = lines.map((line) => {
       const key = /^\s*(?:export\s+)?([\w.-]+)\s*=/.exec(line)?.[1];
       if (key === undefined || !pending.has(key)) return line;
-      const value = pending.get(key) as string;
-      pending.delete(key);
-      return `${key}=${quote(value)}`;
+      seen.add(key);
+      return `${key}=${quote(pending.get(key) as string)}`;
     });
-    for (const [key, value] of pending) next.push(`${key}=${quote(value)}`);
+    for (const [key, value] of pending) {
+      if (!seen.has(key)) next.push(`${key}=${quote(value)}`);
+    }
     writePrivateFile(this.path, `${next.join("\n")}\n`);
   }
 

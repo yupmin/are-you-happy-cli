@@ -1,5 +1,6 @@
 import { readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { parseEnv } from "node:util";
 import { describe, expect, it } from "vitest";
 import { run, tempDir } from "./helpers";
 
@@ -42,6 +43,30 @@ describe("auth client", () => {
     expect(readFileSync(join(cwd, ".env"), "utf8")).toBe(
       `${ID}=new\nOTHER=1\n${SECRET}=new-secret\n`,
     );
+  });
+
+  it("duplicate keys: every line takes the new value, so the parsed value is the new one", async () => {
+    const cwd = tempDir();
+    writeFileSync(
+      join(cwd, ".env"),
+      `${ID}=first\nOTHER=1\nexport ${ID}=second\n${SECRET}=old-secret\n${SECRET}=older\n`,
+    );
+    const r = await run(["auth", "client"], {
+      cwd,
+      tty: true,
+      answers: [true, "new-id", "new-secret"],
+    });
+    expect(r.exitCode).toBe(0);
+    expect(r.stdout).toContain("new-id");
+    const file = readFileSync(join(cwd, ".env"), "utf8");
+    expect(file).toBe(
+      `${ID}=new-id\nOTHER=1\n${ID}=new-id\n${SECRET}=new-secret\n${SECRET}=new-secret\n`,
+    );
+    expect(parseEnv(file)).toMatchObject({
+      [ID]: "new-id",
+      [SECRET]: "new-secret",
+      OTHER: "1",
+    });
   });
 
   it("existing credentials: declining changes nothing", async () => {
