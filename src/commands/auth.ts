@@ -1,8 +1,9 @@
 import type { Command } from "@commander-js/extra-typings";
-import { type Ctx, cancel } from "../context";
-import { CliError, REASON } from "../errors";
+import type { Ctx } from "../context";
+import { REASON } from "../errors";
 import { envKey } from "../project";
 import { issueAndSave } from "../services/token-flow";
+import { confirmOrCancel, requireInteractive } from "./flows";
 
 export const CLIENT_ID_KEY = envKey("CLIENT_ID");
 export const CLIENT_SECRET_KEY = envKey("CLIENT_SECRET");
@@ -43,14 +44,17 @@ function authPurgeToken(ctx: Ctx): void {
 /** Interactive only: secrets never come in through flags (shell history, process list). */
 async function authClient(ctx: Ctx): Promise<void> {
   const { io, t, out, dotenv } = ctx;
-  if (!io.interactive)
-    throw new CliError(400, t.auth.client.interactiveOnly, REASON.interactiveOnly);
+  requireInteractive(ctx, {
+    message: t.auth.client.interactiveOnly,
+    reason: REASON.interactiveOnly,
+  });
 
   const current = dotenv.read() ?? {};
   if (current[CLIENT_ID_KEY] !== undefined || current[CLIENT_SECRET_KEY] !== undefined) {
     out.warn(t.auth.client.existing(dotenv.path));
-    if (!(await io.prompt.confirm({ message: t.common.overwrite, default: false }))) {
-      cancel(ctx);
+    if (
+      (await confirmOrCancel(ctx, { message: t.common.overwrite, default: false })) === "cancelled"
+    ) {
       return;
     }
   }

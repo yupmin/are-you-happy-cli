@@ -1,11 +1,12 @@
 import type { Command } from "@commander-js/extra-typings";
-import { type Ctx, cancel } from "../context";
-import { CliError, REASON } from "../errors";
+import type { Ctx } from "../context";
+import { REASON } from "../errors";
 import { LANGUAGES, type Lang, packs } from "../locales";
 import { envKey } from "../project";
 import { maskSetting } from "../settings/mask";
 import { type Resolved, SETTING_NAMES, type SettingName } from "../settings/resolve";
 import { isValidTimeZone } from "../timezone";
+import { beforeOverwriteExistingFile, confirmOrCancel, requireWhenNonInteractive } from "./flows";
 
 interface GlobalFlags {
   lang?: string;
@@ -81,12 +82,13 @@ function shownSetting(
 }
 
 async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
-  const { io, t, out, config } = ctx;
+  const { io, t, config } = ctx;
   const { prompt } = io;
 
-  if (!io.interactive && (flags.lang === undefined || flags.timezone === undefined)) {
-    throw new CliError(400, t.config.init.needFlags, REASON.noninteractive);
-  }
+  requireWhenNonInteractive(ctx, flags.lang !== undefined && flags.timezone !== undefined, {
+    message: t.config.init.needFlags,
+    reason: REASON.noninteractive,
+  });
 
   const lang: Lang =
     (flags.lang as Lang | undefined) ??
@@ -98,23 +100,23 @@ async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
 
   const timezone = flags.timezone ?? (await askTimezone(ctx));
 
-  if (config.exists) {
-    if (io.interactive) {
-      if (!(await prompt.confirm({ message: t.common.overwrite, default: false }))) {
-        cancel(ctx);
-        return;
-      }
-    } else {
-      out.warn(t.warnings.overwritten(config.path));
-    }
-  } else if (io.interactive) {
+  if (
+    (await beforeOverwriteExistingFile(ctx, {
+      exists: config.exists,
+      path: config.path,
+      overwrittenWarning: t.warnings.overwritten(config.path),
+    })) === "cancelled"
+  ) {
+    return;
+  }
+
+  if (!config.exists && io.interactive) {
     if (
-      !(await prompt.confirm({
+      (await confirmOrCancel(ctx, {
         message: t.config.init.confirmSave(config.path),
         default: true,
-      }))
+      })) === "cancelled"
     ) {
-      cancel(ctx);
       return;
     }
   }
