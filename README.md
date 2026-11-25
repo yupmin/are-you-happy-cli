@@ -112,7 +112,7 @@ npm run build      # tsup → dist/cli.js
 
 PR과 `main` push마다 GitHub Actions(`.github/workflows/ci.yml`)가 Node 22·24·26에서 lint, typecheck, build, test를 돌립니다.
 
-구조: `src/commands/`는 인자 파싱과 결과(`ctx.result`) 구성, `src/services/`는 API·토큰 흐름, `src/settings/`의 store(Config File·`.env`·Token State)는 파일 읽기·검증·권한·저장을 맡고, 최종 출력(text/json 봉투)은 `src/output.ts`가 담당합니다. Language Pack은 `src/locales/en.ts`, `ko.ts`이며 `en`의 키 구조가 타입으로 강제됩니다.
+구조: `src/commands/`는 인자 파싱과 결과(`ctx.result`) 구성, `src/services/`는 TokenIssuer와 토큰 흐름, `src/settings/`의 store(Config File·`.env`·Token State)는 파일 읽기·검증·권한·저장을 맡고, 최종 출력(text/json 봉투)은 `src/output.ts`가 담당합니다. Language Pack은 `src/locales/en.ts`, `ko.ts`이며 `en`의 키 구조가 타입으로 강제됩니다.
 
 ## 템플릿으로 재사용하기: 주석 규칙
 
@@ -127,14 +127,14 @@ PR과 `main` push마다 GitHub Actions(`.github/workflows/ci.yml`)가 Node 22·2
 | `src/settings/mask.ts` | 어떤 설정을 비밀로 보고 어떻게 마스킹할지 |
 | `src/settings/resolve.ts` | CLI가 아는 Environment Setting 이름 목록 |
 | `src/output.ts` | `--format`(json 봉투)을 갖는 명령 그룹(`FORMAT_GROUP`, 기본 `action`). 나머지 명령은 항상 text ([ADR-0003](docs/adr/0003-format-only-for-action.md)) |
-| `src/services/api.ts` | 샘플 Client Credentials(`happy-client` / `happy-secret`), Access Token·Refresh Token 상수와 TTL |
+| `src/services/sample-issuer.ts` | 샘플 Client Credentials(`happy-client` / `happy-secret`), Access Token·Refresh Token 상수와 TTL. `TokenIssuer` adapter |
 
 ### `// SAMPLE:` — 템플릿 전환 시 삭제할 Sample Action 코드
 
 | 위치 | 내용 |
 |---|---|
 | `src/commands/action.ts` | `action are-you` 명령 (action 그룹 공통 가드와 `services/token-flow.ts`의 `callWithAccessToken`은 남김) |
-| `src/services/api.ts` | Mood 엔드포인트(`MOODS`, `getMood`) |
+| `src/services/sample-mood.ts` | Mood 엔드포인트(`MOODS`, `getMood`). `TokenIssuer` 밖 |
 | `src/services/korean.ts` | 은/는 조사 선택 |
 | `src/locales/en.ts`, `ko.ts` | `action.areYou` 문자열, 한국어 Mood |
 | `test/action.test.ts`, `test/korean.test.ts` | Sample Action 테스트 (토큰 복구 테스트는 새 action으로 옮김) |

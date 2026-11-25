@@ -1,13 +1,7 @@
 import type { Ctx } from "../context";
 import { CliError, REASON, type Reason } from "../errors";
 import type { TokenState } from "../settings/token-state";
-import * as api from "./api";
-import { ApiError, type TokenResponse } from "./api";
-
-export interface ClientCredentials {
-  clientId: string;
-  clientSecret: string;
-}
+import { ApiError, type ClientCredentials, type TokenResponse } from "./token-issuer";
 
 /** Runs `call`; an ApiError from the API becomes a CliError with the given message and hint. */
 async function mapApiError<T>(
@@ -64,7 +58,7 @@ export async function issueAndSave(
     );
   }
   const res = await mapApiError(
-    () => api.issueToken(creds.clientId, creds.clientSecret),
+    () => ctx.issuer.issueToken(creds),
     t.auth.issueToken.rejected,
     REASON.credentialsRejected,
     t.hints.runAuthClient,
@@ -90,7 +84,7 @@ export async function getAccessToken(ctx: Ctx): Promise<string> {
   if (!isExpired(state, io.now())) return state.accessToken;
 
   try {
-    const res = await api.refreshAccessToken(state.refreshToken);
+    const res = await ctx.issuer.refreshAccessToken(state.refreshToken);
     const refreshed = save(ctx, toTokenState(res, state.clientId, io.now()));
     out.warn(t.token.refreshed);
     return refreshed.accessToken;

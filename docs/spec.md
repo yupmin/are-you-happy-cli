@@ -71,10 +71,10 @@ Config File 형식:
 
 ## 가상 API
 
-- HTTP 없이 프로세스 내 함수로 구현 (`services/api`)
+- HTTP 없이 프로세스 내 `TokenIssuer`로 발급·갱신한다 (`services/sample-issuer.ts`, [ADR-0005](adr/0005-token-issuer-port.md)). 토큰 흐름은 `Ctx.issuer`만 부른다
 - Access Token 상수 `it.me.and.you`, Refresh Token 상수 `it.me.and.you.again`, TTL 3600초 (`// CUSTOMIZE:`)
 - 발급 응답: `{ accessToken, refreshToken, expiresIn }`
-- Mood 조회 시 토큰 불일치 → `401`
+- Mood 조회는 Sample Action 전용 (`services/sample-mood.ts`). 토큰 불일치 → `401`
 
 ### 토큰 흐름 (action 실행 시)
 
