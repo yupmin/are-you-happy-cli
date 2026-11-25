@@ -69,6 +69,7 @@ Switch on `reason` from an `action --format json` failure. Apply at most one rec
 | `usage` | The invocation is wrong. Fix the arguments. Do not retry the same command line. |
 | `unsupported_lang` | Pass `--lang en` or `--lang ko`. |
 | `invalid_timezone` | Pass a valid IANA `--timezone`. |
+| `invalid_api_url` | `ARE_YOU_HAPPY_CLI_API_URL` must be an absolute http(s) URL with no username or password. Fix it, or unset it to use the sample issuer. Do not retry the same value. |
 | `dotenv_invalid` | The cwd `.env` could not be parsed. Ask the user to fix that file. |
 
 `auth client` and `config init` are text, so they have no `reason`. A non-TTY `auth client` exits 2: ask the user to run it in a terminal. A non-TTY `config init` without both `--lang` and `--timezone` exits 2: re-run it with both flags.

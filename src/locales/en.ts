@@ -132,6 +132,8 @@ For agents:
     unsupportedLang: (value: string, supported: string) =>
       `Unsupported language "${value}". Choose one of: ${supported}.`,
     invalidTimezone: (value: string) => `Invalid time zone "${value}".`,
+    invalidApiUrl:
+      "ARE_YOU_HAPPY_CLI_API_URL must be an absolute http(s) URL with no username or password.",
     configInvalid: (path: string) => `The Config File is not valid: ${path}`,
     dotenvInvalid: (path: string) => `The .env file is not valid: ${path}`,
     subcommandRequired: "A subcommand is required.",

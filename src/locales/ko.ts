@@ -141,6 +141,7 @@ export const ko: LanguagePack = {
     unsupportedLang: (value, supported) =>
       `지원하지 않는 언어 "${value}"입니다. 다음 중에서 고르세요: ${supported}.`,
     invalidTimezone: (value) => `잘못된 타임존 "${value}"입니다.`,
+    invalidApiUrl: "ARE_YOU_HAPPY_CLI_API_URL은 사용자 정보가 없는 절대 http(s) URL이어야 합니다.",
     configInvalid: (path) => `설정 파일이 올바르지 않습니다: ${path}`,
     dotenvInvalid: (path) => `.env 파일이 올바르지 않습니다: ${path}`,
     subcommandRequired: "하위 명령이 필요합니다.",

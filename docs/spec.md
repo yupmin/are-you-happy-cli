@@ -71,10 +71,13 @@ Config File 형식:
 
 ## 가상 API
 
-- HTTP 없이 프로세스 내 `TokenIssuer`로 발급·갱신한다 (`services/sample-issuer.ts`, [ADR-0005](adr/0005-token-issuer-port.md)). 토큰 흐름은 `Ctx.issuer`만 부른다
+- `ARE_YOU_HAPPY_CLI_API_URL`이 없으면 프로세스 내 샘플 `TokenIssuer`로 발급·갱신한다 (`services/sample-issuer.ts`, [ADR-0005](adr/0005-token-issuer-port.md)). 토큰 흐름은 `Ctx.issuer`만 부른다
+- 그 값이 있으면 HTTP adapter가 `{base}/oauth/token`에 발급은 `client_credentials`, 갱신은 `refresh_token`으로 POST한다 (`services/http-token-issuer.ts`, [ADR-0007](adr/0007-http-token-issuer.md)). 응답은 `access_token`, `refresh_token`, `expires_in`(정수 초). 갱신 응답에 `refresh_token`이 없으면 보낸 값을 유지한다
+- URL은 사용자 정보가 없는 절대 http(s)여야 한다. 아니면 `400` / `invalid_api_url`. 샘플로 내려가지 않고, 값은 메시지에 넣지 않는다
+- HTTP 상태는 `ApiError` status가 된다. 타임아웃 `504`, 네트워크 실패 `503`, 잘못된 본문 `502`. `reason`은 토큰 흐름이 정한다
 - Access Token 상수 `it.me.and.you`, Refresh Token 상수 `it.me.and.you.again`, TTL 3600초 (`// CUSTOMIZE:`)
-- 발급 응답: `{ accessToken, refreshToken, expiresIn }`
-- Mood 조회는 Sample Action 전용 (`services/sample-mood.ts`). 토큰 불일치 → `401`
+- 샘플 발급 응답: `{ accessToken, refreshToken, expiresIn }`
+- Mood 조회는 Sample Action 전용 (`services/sample-mood.ts`)이며 HTTP로 나가지 않는다. `API_URL`만 켜면 발급된 Access Token이 샘플 상수와 달라 `action are-you`는 `401`이다. 템플릿 전환 시 이 조회를 지우고 `callWithAccessToken` 콜백을 바꾼다
 
 ### 토큰 흐름 (action 실행 시)
 
@@ -95,7 +98,7 @@ Config File 형식:
 - json: stdout에 봉투 한 번 (ADR-0001, [ADR-0004](adr/0004-failure-warnings-and-reason.md))
   - 성공: `{ code, message, data }`. `data.warnings`는 경고 배열(없으면 `[]`)
   - 실패: `{ code, message, reason, data }`. `data`는 `{ warnings }`이고 `null`이 아니다. `reason`은 언어와 무관한 실패 코드다. `message`는 Language Pack 문장이고, hint가 있으면 한 칸 뒤에 붙는다
-  - `reason`: `config_missing`, `config_invalid`, `dotenv_invalid`, `token_invalid`, `no_credentials`, `credentials_rejected`, `token_rejected`, `unsupported_lang`, `invalid_timezone`, `interactive_only`, `noninteractive`, `usage`, `unexpected`. json 실패 봉투에만 있다. `interactive_only`·`noninteractive`는 text 전용 명령(`auth client`, `config init`)이라 봉투에 나오지 않는다.
+  - `reason`: `config_missing`, `config_invalid`, `dotenv_invalid`, `token_invalid`, `no_credentials`, `credentials_rejected`, `token_rejected`, `unsupported_lang`, `invalid_timezone`, `invalid_api_url`, `interactive_only`, `noninteractive`, `usage`, `unexpected`. json 실패 봉투에만 있다. `interactive_only`·`noninteractive`는 text 전용 명령(`auth client`, `config init`)이라 봉투에 나오지 않는다.
   - `code`: HTTP 스타일 숫자(`200`, `400`, `401`, `500`)
   - 시각은 ISO8601 + 설정 타임존 오프셋 (`2026-11-22T23:10:00+09:00`)
   - 색상·ANSI 없음

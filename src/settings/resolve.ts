@@ -13,7 +13,7 @@ export interface Resolved {
 }
 
 // CUSTOMIZE: the Environment Settings this CLI knows about (name without prefix).
-export const SETTING_NAMES = ["LANG", "TIMEZONE", "CLIENT_ID", "CLIENT_SECRET"] as const;
+export const SETTING_NAMES = ["LANG", "TIMEZONE", "CLIENT_ID", "CLIENT_SECRET", "API_URL"] as const;
 export type SettingName = (typeof SETTING_NAMES)[number];
 
 export type Settings = Record<SettingName, Resolved | undefined>;

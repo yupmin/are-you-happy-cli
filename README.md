@@ -125,9 +125,10 @@ PR과 `main` push마다 GitHub Actions(`.github/workflows/ci.yml`)가 Node 22·2
 | `src/project.ts` | **Project Keyword**. 실행 파일명, Config File 폴더명, 환경변수 접두사가 모두 여기서 파생 |
 | `src/errors.ts` | HTTP 스타일 status → 종료 코드 매핑(`httpStatusToExitCode`) |
 | `src/settings/mask.ts` | 어떤 설정을 비밀로 보고 어떻게 마스킹할지 |
-| `src/settings/resolve.ts` | CLI가 아는 Environment Setting 이름 목록 |
+| `src/settings/resolve.ts` | CLI가 아는 Environment Setting 이름 목록. `API_URL`이 없으면 샘플 발급, 있으면 HTTP |
 | `src/output.ts` | `--format`(json 봉투)을 갖는 명령 그룹(`FORMAT_GROUP`, 기본 `action`). 나머지 명령은 항상 text ([ADR-0003](docs/adr/0003-format-only-for-action.md)) |
-| `src/services/sample-issuer.ts` | 샘플 Client Credentials(`happy-client` / `happy-secret`), Access Token·Refresh Token 상수와 TTL. `TokenIssuer` adapter |
+| `src/services/sample-issuer.ts` | 샘플 Client Credentials(`happy-client` / `happy-secret`), Access Token·Refresh Token 상수와 TTL. `API_URL`이 없을 때의 `TokenIssuer` |
+| `src/services/http-token-issuer.ts` | `ARE_YOU_HAPPY_CLI_API_URL`이 있을 때의 OAuth2 예. 경로(`oauth/token`), 타임아웃, 응답 스키마, 장애 status ([ADR-0007](docs/adr/0007-http-token-issuer.md)). Mood 조회는 이 URL을 쓰지 않음 |
 
 ### `// SAMPLE:` — 템플릿 전환 시 삭제할 Sample Action 코드
 
