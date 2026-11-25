@@ -8,6 +8,8 @@
 
 - HTTP 상태 그대로 (`401`은 종료 코드 3, `5xx`는 1)
 - 타임아웃은 `504`, 네트워크 실패는 `503`, 2xx인데 JSON이 아니거나 스키마에 안 맞으면 `502`
-- `reason`은 토큰 흐름이 정한다. 발급 실패는 `credentials_rejected`이고 status만 HTTP 값을 따른다. 갱신 실패는 기존처럼 재발급으로 간다
+- `reason`은 토큰 흐름이 정한다. 발급 실패는 `credentials_rejected`이고 status만 HTTP 값을 따른다. 갱신 중 `ApiError`는 기존처럼 재발급으로 간다
 
-URL이 절대 http(s)가 아니거나 사용자 정보(`user:password@`)가 있으면 샘플로 내려가지 않고 `400` / `invalid_api_url`이다. 값 자체는 메시지에 넣지 않는다. 갱신 요청의 Client Secret은 포트가 넘기지 않으므로, 설정에 ID와 Secret이 둘 다 있을 때만 붙인다.
+URL이 절대 http(s)가 아니거나 사용자 정보(`user:password@`)가 있으면 샘플로 내려가지 않는다. 그 검사는 기동 시가 아니라 발급 또는 갱신을 시도할 때다. `config show`와 `--help`는 그대로 동작하고, `config show`는 잘못된 값도 보여 준다. 실패는 `400` / `invalid_api_url`인 `CliError`다. 값 자체는 실패 메시지에 넣지 않는다. `ApiError`가 아니므로 갱신 실패의 재발급으로 넘어가지 않는다.
+
+리다이렉트는 따라가지 않는다. `307`은 본문을 유지하므로 Client Secret이 다른 호스트로 다시 나간다. 그 status를 `ApiError`로 둔다. 갱신 요청의 Client Secret은 포트가 넘기지 않으므로, 설정에 ID와 Secret이 둘 다 있을 때만 붙인다.

@@ -73,8 +73,8 @@ Config File 형식:
 
 - `ARE_YOU_HAPPY_CLI_API_URL`이 없으면 프로세스 내 샘플 `TokenIssuer`로 발급·갱신한다 (`services/sample-issuer.ts`, [ADR-0005](adr/0005-token-issuer-port.md)). 토큰 흐름은 `Ctx.issuer`만 부른다
 - 그 값이 있으면 HTTP adapter가 `{base}/oauth/token`에 발급은 `client_credentials`, 갱신은 `refresh_token`으로 POST한다 (`services/http-token-issuer.ts`, [ADR-0007](adr/0007-http-token-issuer.md)). 응답은 `access_token`, `refresh_token`, `expires_in`(정수 초). 갱신 응답에 `refresh_token`이 없으면 보낸 값을 유지한다
-- URL은 사용자 정보가 없는 절대 http(s)여야 한다. 아니면 `400` / `invalid_api_url`. 샘플로 내려가지 않고, 값은 메시지에 넣지 않는다
-- HTTP 상태는 `ApiError` status가 된다. 타임아웃 `504`, 네트워크 실패 `503`, 잘못된 본문 `502`. `reason`은 토큰 흐름이 정한다
+- URL은 사용자 정보가 없는 절대 http(s)여야 한다. 검사는 발급·갱신할 때만 한다. 아니면 샘플로 내려가지 않고 `400` / `invalid_api_url`(`CliError`, 재발급하지 않음). 값은 실패 메시지에 넣지 않는다. `config show`는 잘못된 값도 보여 주고, `--help`는 그대로 동작한다
+- HTTP 상태는 `ApiError` status가 된다. 리다이렉트는 따라가지 않고 그 status를 쓴다. 타임아웃 `504`, 네트워크 실패 `503`, 잘못된 본문 `502`. `reason`은 토큰 흐름이 정한다
 - Access Token 상수 `it.me.and.you`, Refresh Token 상수 `it.me.and.you.again`, TTL 3600초 (`// CUSTOMIZE:`)
 - 샘플 발급 응답: `{ accessToken, refreshToken, expiresIn }`
 - Mood 조회는 Sample Action 전용 (`services/sample-mood.ts`)이며 HTTP로 나가지 않는다. `API_URL`만 켜면 발급된 Access Token이 샘플 상수와 달라 `action are-you`는 `401`이다. 템플릿 전환 시 이 조회를 지우고 `callWithAccessToken` 콜백을 바꾼다
@@ -83,7 +83,7 @@ Config File 형식:
 
 1. Token State 없음 → Client Credentials로 자동 발급 + 경고 (Client Credentials도 없으면 `401` + `auth client` 안내). 유효한 Token State는 TTL 동안 재사용
 2. 저장된 `clientId` ≠ 현재 `.env`의 Client ID → 무효로 취급
-3. 만료 → Refresh Token으로 갱신 → 실패 시 Client Credentials로 재발급 → 실패 시 `401`
+3. 만료 → Refresh Token으로 갱신 → `ApiError`면 Client Credentials로 재발급 → 실패 시 `401`. `ApiError`가 아닌 실패(잘못된 `API_URL` 포함)는 재발급하지 않고 그대로 올라간다
 
 ## Mood
 

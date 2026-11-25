@@ -65,10 +65,7 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   const timezone = resolveTimeZone(settings.TIMEZONE?.value, io, (value, fallback) =>
     out.warn(t.warnings.invalidTimezone(value, fallback)),
   );
-  const issuer = issuerFor(settings);
-  if (issuer === "invalid") {
-    return out.failure(400, t.errors.invalidApiUrl, REASON.invalidApiUrl);
-  }
+  const issuer = issuerFor(settings, t.errors.invalidApiUrl);
   const ctx: Ctx = {
     io,
     t,
@@ -101,11 +98,20 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   }
 }
 
-/** Unset API_URL keeps the sample issuer. A set but unusable URL is `invalid`. */
-function issuerFor(settings: Ctx["settings"]): TokenIssuer | "invalid" {
+/**
+ * Unset API_URL keeps the sample issuer. A set but unusable URL is refused only when a token
+ * is issued or refreshed, so `config show` and `--help` still run. The refusal is a CliError,
+ * not an ApiError, so refresh does not fall through to reissue and the value is not echoed.
+ */
+export function issuerFor(settings: Ctx["settings"], invalidApiUrl: string): TokenIssuer {
   const raw = settings.API_URL?.value;
   if (raw === undefined) return sampleIssuer;
-  if (!parseHttpBaseUrl(raw)) return "invalid";
+  if (!parseHttpBaseUrl(raw)) {
+    const reject = async (): Promise<never> => {
+      throw new CliError(400, invalidApiUrl, REASON.invalidApiUrl);
+    };
+    return { issueToken: reject, refreshAccessToken: reject };
+  }
   const clientId = settings.CLIENT_ID?.value;
   const clientSecret = settings.CLIENT_SECRET?.value;
   return createHttpTokenIssuer({

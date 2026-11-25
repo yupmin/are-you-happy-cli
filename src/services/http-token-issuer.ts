@@ -65,8 +65,9 @@ export function tokenEndpoint(base: URL): string {
  * OAuth2 token endpoint. `issueToken` is `client_credentials`. `refreshAccessToken`
  * is `refresh_token` (reuses the sent refresh token when the body omits one).
  * Failures are ApiError only: the HTTP status, 504 on timeout, 503 on network
- * failure, 502 when a 2xx body is not the grant schema. The message is the status.
- * Request and response bodies are not attached to the error.
+ * failure, 502 when a 2xx body is not the grant schema. Redirects are not followed
+ * (`307` would resend the body). The message is the status. Request and response
+ * bodies, and the Location header, are not attached to the error.
  */
 export function createHttpTokenIssuer(options: HttpTokenIssuerOptions): TokenIssuer {
   const base = parseHttpBaseUrl(options.baseUrl);
@@ -90,6 +91,7 @@ export function createHttpTokenIssuer(options: HttpTokenIssuerOptions): TokenIss
           "content-type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams(fields),
+        redirect: "manual",
         signal,
       });
     } catch {

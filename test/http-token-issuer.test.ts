@@ -7,13 +7,14 @@ import type { Ctx } from "../src/context";
 import type { Io } from "../src/io";
 import { en } from "../src/locales/en";
 import { Output } from "../src/output";
+import { issuerFor } from "../src/run-cli";
 import {
   createHttpTokenIssuer,
   parseHttpBaseUrl,
   tokenEndpoint,
 } from "../src/services/http-token-issuer";
 import { getAccessToken } from "../src/services/token-flow";
-import { ApiError } from "../src/services/token-issuer";
+import { ApiError, type TokenIssuer } from "../src/services/token-issuer";
 import { ConfigFileStore } from "../src/settings/config-file";
 import { DotenvStore } from "../src/settings/dotenv";
 import type { Settings } from "../src/settings/resolve";
@@ -29,9 +30,14 @@ interface Hit {
   body: string;
 }
 
-function serve(
-  handle: (hit: Hit) => { status: number; body?: string; hang?: boolean } | Promise<never>,
-) {
+interface Reply {
+  status: number;
+  body?: string;
+  hang?: boolean;
+  headers?: Record<string, string>;
+}
+
+function serve(handle: (hit: Hit) => Reply | Promise<never>) {
   const hits: Hit[] = [];
   const server: Server = createServer((req, res) => {
     const chunks: Buffer[] = [];
@@ -42,6 +48,9 @@ function serve(
       void Promise.resolve(handle(hit)).then((result) => {
         if (!result || result.hang) return;
         res.statusCode = result.status;
+        for (const [name, value] of Object.entries(result.headers ?? {})) {
+          res.setHeader(name, value);
+        }
         res.setHeader("content-type", "application/json");
         res.end(result.body ?? "");
       });
@@ -204,6 +213,31 @@ describe("HTTP TokenIssuer", () => {
     }
   });
 
+  it("does not follow a redirect that would resend the client secret", async () => {
+    const sink = await serve(() => ({ status: 200, body: grant("stolen") }));
+    const server = await serve(() => ({
+      status: 307,
+      headers: { location: `${sink.url}/oauth/token` },
+    }));
+    try {
+      const err = await createHttpTokenIssuer({ baseUrl: server.url })
+        .issueToken({ clientId: "happy-client", clientSecret: SECRET })
+        .then(
+          () => undefined,
+          (caught: unknown) => caught,
+        );
+      expect(err).toBeInstanceOf(ApiError);
+      expect((err as ApiError).status).toBe(307);
+      expect(String(err)).toBe("ApiError: API responded 307");
+      expect(String(err)).not.toContain(SECRET);
+      expect(String(err)).not.toContain(sink.url);
+      expect(sink.hits).toHaveLength(0);
+    } finally {
+      await server.close();
+      await sink.close();
+    }
+  });
+
   it("a closed port is 503", async () => {
     const server = await serve(() => ({ status: 200, body: grant("x") }));
     const url = server.url;
@@ -321,15 +355,70 @@ describe("token flow through the HTTP adapter", () => {
 });
 
 describe("API_URL", () => {
-  it("an unusable URL is 400 and the value is not echoed", async () => {
-    const secretUrl = "https://user:supersecret@example.com/token";
-    const r = await run(["action", "are-you", "Minsu"], {
+  const secretUrl = "https://user:supersecret@example.com/token";
+
+  it("fails only when a token is issued, and --verbose does not echo the value", async () => {
+    const home = tempDir();
+    const cwd = tempDir();
+    await run(["config", "init", "--lang", "en", "--timezone", "UTC"], { home, cwd });
+    writeFileSync(
+      join(cwd, ".env"),
+      `ARE_YOU_HAPPY_CLI_CLIENT_ID=happy-client\nARE_YOU_HAPPY_CLI_CLIENT_SECRET=${SECRET}\n`,
+      { mode: 0o600 },
+    );
+    const r = await run(["--verbose", "action", "are-you", "Minsu"], {
+      home,
+      cwd,
       env: { ARE_YOU_HAPPY_CLI_API_URL: secretUrl },
     });
     expect(r.exitCode).toBe(2);
     expect(r.json()).toMatchObject({ code: 400, reason: "invalid_api_url" });
     expect(r.stdout + r.stderr).not.toContain("supersecret");
     expect(r.stdout + r.stderr).not.toContain(secretUrl);
+  });
+
+  it("config show prints a bad URL, and --help still runs", async () => {
+    const shown = await run(["config", "show"], {
+      env: { ARE_YOU_HAPPY_CLI_API_URL: secretUrl },
+    });
+    expect(shown.exitCode).toBe(0);
+    expect(shown.stdout).toContain("ARE_YOU_HAPPY_CLI_API_URL");
+    expect(shown.stdout).toContain(secretUrl);
+
+    const help = await run(["--help"], { env: { ARE_YOU_HAPPY_CLI_API_URL: secretUrl } });
+    expect(help.exitCode).toBe(0);
+    expect(help.stdout).toContain("config");
+    expect(help.stdout + help.stderr).not.toContain(secretUrl);
+    expect(help.stdout + help.stderr).not.toContain(en.errors.invalidApiUrl);
+  });
+
+  it("refresh of an unusable URL does not fall through to reissue", async () => {
+    const issuer = issuerFor(
+      {
+        LANG: undefined,
+        TIMEZONE: undefined,
+        CLIENT_ID: undefined,
+        CLIENT_SECRET: undefined,
+        API_URL: { value: secretUrl, source: "shell env" },
+      },
+      en.errors.invalidApiUrl,
+    );
+    let issued = 0;
+    const wrapped: TokenIssuer = {
+      issueToken: (creds) => {
+        issued += 1;
+        return issuer.issueToken(creds);
+      },
+      refreshAccessToken: (token) => issuer.refreshAccessToken(token),
+    };
+    const h = flow(wrapped);
+    const err = await getAccessToken(h.ctx).then(
+      () => undefined,
+      (caught: unknown) => caught,
+    );
+    expect(err).toMatchObject({ status: 400, reason: "invalid_api_url" });
+    expect(String(err)).not.toContain("supersecret");
+    expect(issued).toBe(0);
   });
 
   it("config show prints a usable API_URL", async () => {
