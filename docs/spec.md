@@ -125,8 +125,9 @@ Config File 형식:
 ## 테스트
 
 - services 단위 테스트(무작위는 주입 가능하게)
+- 토큰 발급·재사용·갱신·갱신 실패 후 재발급·Client ID 변경은 대본 `TokenIssuer`로 `issueAndSave`/`getAccessToken`을 검증한다. 두지 않은 seam은 [ADR-0006](adr/0006-seams-not-taken.md)
 - commands는 `exitOverride` + `configureOutput`으로 출력 캡처
-- 401은 `token.json`을 직접 변조해 검증
+- Sample Action이 Access Token을 거절하는 401은 `token.json`을 직접 변조해 검증
 
 ## Skill
 
