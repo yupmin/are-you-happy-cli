@@ -42,7 +42,7 @@ npx are-you-happy-cli action are-you 민수
 | 명령 | 동작 |
 |---|---|
 | `config init` | 언어(Language Pack이 있는 `en`, `ko`)와 타임존을 골라 Config File 저장. `--lang`, `--timezone`을 모두 주면 비대화형 |
-| `config show` | 최종 설정값과 출처(flag / shell env / .env / config.json / default). `SECRET`·`TOKEN`이 들어간 키는 마스킹 |
+| `config show` | 검증을 거친 최종 설정값과 출처(flag / shell env / .env / config.json / default). 언어·타임존이 기본값으로 대체되면 출처는 `default`. `SECRET`·`TOKEN`이 들어간 키는 마스킹 |
 | `auth client` | **대화형 전용.** Client Credentials(ID, SECRET)를 입력받아 cwd의 `.env`에 저장. 비TTY면 `400` |
 | `auth issue-token` | Client Credentials로 Access Token을 발급받아 Token State 저장. 불일치 시 `401` |
 | `auth purge-token` | Token State 삭제 |

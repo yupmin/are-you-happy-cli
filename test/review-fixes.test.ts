@@ -70,9 +70,14 @@ describe("invalid global flags are 400", () => {
   });
 
   it("an invalid time zone from env still falls back with a warning", async () => {
-    const r = await run(["config", "show"], { env: { ARE_YOU_HAPPY_CLI_TIMEZONE: "Bogus/Zone" } });
+    const r = await run(["config", "show"], {
+      env: { ARE_YOU_HAPPY_CLI_TIMEZONE: "Bogus/Zone" },
+      systemTimeZone: "Asia/Seoul",
+    });
     expect(r.exitCode).toBe(0);
     expect(r.stderr).toContain("Bogus/Zone");
+    expect(r.stdout).toMatch(/ARE_YOU_HAPPY_CLI_TIMEZONE\s*= Asia\/Seoul \(default\)/);
+    expect(r.stdout).not.toContain("Bogus/Zone");
   });
 });
 
