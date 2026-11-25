@@ -46,6 +46,7 @@ describe("built binary", () => {
     expect(files).toContain("dist/cli.js");
     expect(files).toContain("skills/are-you-happy-cli/SKILL.md");
     expect(files.some((f) => f.startsWith("src/") || f.startsWith("test/"))).toBe(false);
+    expect(files.some((f) => f.startsWith(".cursor/"))).toBe(false);
 
     const app = tempDir();
     const install = spawnSync(
