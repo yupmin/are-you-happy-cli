@@ -65,6 +65,28 @@ Config File 형식:
 - 비TTY: 덮어쓰고 stderr에 경고
 - `--yes`, `--no-input`은 두지 않는다
 
+`auth client`·`config init`의 TTY/비TTY 분기와 확인·취소 처리는 아래 **대화형 명령 흐름** 헬퍼로 구현한다. 동작은 이 절과 명령 표의 문장과 같아야 한다.
+
+### 대화형 명령 흐름
+
+쓰기·확인이 있는 명령이 공유하는 분기는 `src/commands/flows.ts`에 둔다. 도메인 프롬프트(입력 문구, timezone 선택, credential 키 존재 여부 판단)는 각 `commands/*.ts`에 남긴다. `services/`로 옮기지 않는다 (명령 UX 흐름이므로 [ADR-0002](adr/0002-commands-build-result-output-renders.md)의 `commands/` 책임).
+
+반환 타입 `Proceed`는 `"proceed"` | `"cancelled"`이다. `"cancelled"`는 `cancel(ctx)`로 `ctx.result = { message: common.cancelled }`가 이미 설정된 상태를 뜻한다.
+
+| 함수 | 역할 |
+|---|---|
+| `requireInteractive(ctx, fail)` | `!ctx.io.interactive`이면 `CliError(400, fail.message, fail.reason)` |
+| `requireWhenNonInteractive(ctx, ok, fail)` | `!interactive && !ok`일 때만 위와 같이 throw (대화형이면 검사 안 함) |
+| `confirmOrCancel(ctx, { message, default })` | `prompt.confirm` → 거부 시 `cancel(ctx)` 후 `"cancelled"`, 수락 시 `"proceed"` |
+| `beforeOverwriteExistingFile(ctx, { exists, path, overwrittenWarning })` | `exists`가 거짓이면 `"proceed"`. 참이면 TTY에서는 `t.common.overwrite`로 `confirmOrCancel`(`default: false`). 비TTY면 `overwrittenWarning`을 stderr 경고 한 번 후 `"proceed"` (`path`는 호출부 문맥용; 경고 문장은 Language Pack) |
+
+적용:
+
+- `auth client`: `requireInteractive` + credential 키가 이미 있으면 기존처럼 경고 후 `confirmOrCancel`(`t.common.overwrite`). 이후 input/password는 명령에 둔다.
+- `config init`: 비대화형일 때 `--lang`·`--timezone` 둘 다 없으면 `requireWhenNonInteractive` + `reason: noninteractive`. Config File이 있으면 `beforeOverwriteExistingFile`. 없고 TTY이면 `confirmOrCancel`(`t.config.init.confirmSave(path)`, `default: true`) — 이 확인은 덮어쓰기 헬퍼에 넣지 않는다.
+
+새 CLI 템플릿에서 비슷한 쓰기 명령을 추가할 때도 같은 헬퍼를 쓴다. 별도 명령 레지스트리나 DI는 두지 않는다 ([ADR-0006](adr/0006-seams-not-taken.md)).
+
 ### action 가드
 
 `action` 그룹 공통 가드: Config File이 없으면 `400`(종료 코드 2) + "`config init`을 먼저 실행하라". 다른 명령은 Config File 없이도 기본값으로 동작.
@@ -122,7 +144,7 @@ Config File 형식:
 
 ## 구조
 
-- `commands/`: 인자 파싱과 결과(`ctx.result`) 구성, `services/`·`settings/`: 명령 사이에 공유되는 로직, 출력은 `src/output.ts`가 담당 ([ADR-0002](adr/0002-commands-build-result-output-renders.md))
+- `commands/`: 인자 파싱과 결과(`ctx.result`) 구성. 명령 간 TTY·확인·취소 분기는 `commands/flows.ts`. `services/`·`settings/`: 명령 사이에 공유되는 도메인·파일 로직, 출력은 `src/output.ts`가 담당 ([ADR-0002](adr/0002-commands-build-result-output-renders.md))
 - 수정 가능 지점 `// CUSTOMIZE: <설명>`, 템플릿 전환 시 삭제 대상 `// SAMPLE:`
 
 ## 테스트
