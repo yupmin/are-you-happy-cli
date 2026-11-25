@@ -6,6 +6,22 @@ import { runCli } from "../src/run-cli";
 
 export type Answer = string | boolean | { cancel: true };
 
+/** JSON envelope from a non-TTY `action` run. `data` fields are the ones tests read. */
+interface JsonEnvelope {
+  code: number;
+  message: string;
+  reason?: string;
+  data: {
+    warnings?: string[];
+    help?: string;
+    mood?: string;
+    message?: string;
+    name?: string;
+    checkedAt?: string;
+    [key: string]: unknown;
+  };
+}
+
 /** Scripted prompter: each prompt call consumes the next answer. `{ cancel: true }` simulates Ctrl+C. */
 export function scriptedPrompter(
   answers: Answer[],
@@ -91,6 +107,6 @@ export async function run(argv: string[], opts: RunOptions = {}) {
     stderr,
     asked: prompter.asked,
     rejected: prompter.rejected,
-    json: () => JSON.parse(stdout) as { code: number; message: string; reason?: string; data: any },
+    json: () => JSON.parse(stdout) as JsonEnvelope,
   };
 }
