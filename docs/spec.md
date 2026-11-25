@@ -92,8 +92,11 @@ Config File 형식:
 ## 출력
 
 - 포맷 결정(`action` 그룹만): `--format` 명시 > stdout이 TTY면 `text`, 아니면 `json`. 에이전트는 SKILL.md 지침대로 `action` 호출에 `--format json` 명시. 그 밖의 명령(`config`·`auth`·`--help`·`--version`)은 항상 `text` ([ADR-0003](adr/0003-format-only-for-action.md)).
-- json: stdout에 봉투 한 번 — `{ code, message, data }` (ADR-0001)
-  - `code`: HTTP 스타일 숫자(`200`, `400`, `401`, `500`), 실패 시 `data: null`, 경고는 `data.warnings`
+- json: stdout에 봉투 한 번 (ADR-0001, [ADR-0004](adr/0004-failure-warnings-and-reason.md))
+  - 성공: `{ code, message, data }`. `data.warnings`는 경고 배열(없으면 `[]`)
+  - 실패: `{ code, message, reason, data }`. `data`는 `{ warnings }`이고 `null`이 아니다. `reason`은 언어와 무관한 실패 코드다. `message`는 Language Pack 문장이고, hint가 있으면 한 칸 뒤에 붙는다
+  - `reason`: `config_missing`, `config_invalid`, `dotenv_invalid`, `token_invalid`, `no_credentials`, `credentials_rejected`, `token_rejected`, `unsupported_lang`, `invalid_timezone`, `interactive_only`, `noninteractive`, `usage`, `unexpected`. json 실패 봉투에만 있다. `interactive_only`·`noninteractive`는 text 전용 명령(`auth client`, `config init`)이라 봉투에 나오지 않는다.
+  - `code`: HTTP 스타일 숫자(`200`, `400`, `401`, `500`)
   - 시각은 ISO8601 + 설정 타임존 오프셋 (`2026-11-22T23:10:00+09:00`)
   - 색상·ANSI 없음
 - text: 결과 stdout, 경고·오류 stderr. 시각은 Language Pack 형식.
@@ -102,8 +105,8 @@ Config File 형식:
 ## 오류와 종료 코드
 
 - `httpStatusToExitCode()` 단일 매핑 (`// CUSTOMIZE:`): `2xx→0`, `400→2`, `401·403→3`, 그 외 `4xx·5xx→1`, Ctrl+C `130`
-- `CliError`(예상된 오류, status·hint 보유) vs 버그(예상 못한 오류: `--verbose` 시 stack trace, 아니면 힌트)
-- commander 오류는 `exitOverride()`로 가로채 `400`/종료 코드 2로 통일, json 모드면 봉투 출력. `showHelpAfterError`는 text 모드만. commander 내장 메시지는 번역하지 않음.
+- `CliError`(예상된 오류, status·`reason`·hint 보유) vs 버그(예상 못한 오류: `reason`은 `unexpected`, `--verbose` 시 stack trace, 아니면 힌트)
+- commander 오류는 `exitOverride()`로 가로채 `400`/종료 코드 2/`reason: usage`로 통일, json 모드면 봉투 출력. `showHelpAfterError`는 text 모드만. commander 내장 메시지는 번역하지 않음.
 - `ExitPromptError`(프롬프트 중 Ctrl+C) → 조용히 130
 - `process.exit()` 금지, `process.exitCode` 사용, `parseAsync()` 사용
 

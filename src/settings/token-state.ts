@@ -1,6 +1,6 @@
 import { rmSync } from "node:fs";
 import { z } from "zod";
-import { CliError } from "../errors";
+import { CliError, REASON } from "../errors";
 import type { LanguagePack } from "../locales";
 import { readIfExists, writePrivateFile } from "./private-file";
 import { PrivateFileStore, type StoreEnv } from "./store";
@@ -46,6 +46,6 @@ export class TokenStateStore extends PrivateFileStore<TokenState> {
   }
 
   protected brokenError(t: LanguagePack): CliError {
-    return new CliError(400, t.token.invalid, t.hints.runIssueToken);
+    return new CliError(400, t.token.invalid, REASON.tokenInvalid, t.hints.runIssueToken);
   }
 }

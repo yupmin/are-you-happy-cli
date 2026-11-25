@@ -1,6 +1,6 @@
 import { parseEnv } from "node:util";
 import { z } from "zod";
-import { CliError } from "../errors";
+import { CliError, REASON } from "../errors";
 import type { LanguagePack } from "../locales";
 import { readIfExists, writePrivateFile } from "./private-file";
 import { SnapshotStore } from "./store";
@@ -41,6 +41,11 @@ export class DotenvStore extends SnapshotStore<Dotenv> {
   }
 
   protected brokenError(t: LanguagePack): CliError {
-    return new CliError(400, t.errors.dotenvInvalid(this.path), t.hints.runAuthClient);
+    return new CliError(
+      400,
+      t.errors.dotenvInvalid(this.path),
+      REASON.dotenvInvalid,
+      t.hints.runAuthClient,
+    );
   }
 }

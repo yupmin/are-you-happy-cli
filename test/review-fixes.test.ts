@@ -59,7 +59,11 @@ describe("invalid global flags are 400", () => {
     const { home, cwd } = await withToken();
     const r = await run(["--timezone", "Bogus/Zone", "action", "are-you", "Minsu"], { home, cwd });
     expect(r.exitCode).toBe(2);
-    expect(r.json()).toMatchObject({ code: 400, data: null });
+    expect(r.json()).toMatchObject({
+      code: 400,
+      reason: "invalid_timezone",
+      data: { warnings: [] },
+    });
     expect(r.json().message).toContain("Bogus/Zone");
   });
 

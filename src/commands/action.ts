@@ -1,6 +1,6 @@
 import type { Command } from "@commander-js/extra-typings";
 import type { Ctx } from "../context";
-import { CliError } from "../errors";
+import { CliError, REASON } from "../errors";
 import * as api from "../services/api";
 import { callWithAccessToken } from "../services/token-flow";
 import { formatIsoInTimeZone } from "../time";
@@ -10,7 +10,12 @@ export function registerAction(group: Command, ctx: Ctx): void {
   group.hook("preAction", () => {
     const { config, t } = ctx;
     if (config.read() === undefined) {
-      throw new CliError(400, t.action.configRequired, t.hints.runConfigInitFirst);
+      throw new CliError(
+        400,
+        t.action.configRequired,
+        REASON.configMissing,
+        t.hints.runConfigInitFirst,
+      );
     }
   });
 

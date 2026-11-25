@@ -1,6 +1,6 @@
 import { CommanderError } from "@commander-js/extra-typings";
 import type { Ctx } from "./context";
-import { CliError, EXIT_INTERRUPTED, isPromptExit } from "./errors";
+import { CliError, EXIT_INTERRUPTED, isPromptExit, REASON } from "./errors";
 import type { Io } from "./io";
 import { DEFAULT_LANG, isLang, LANGUAGES, packs } from "./locales";
 import { FORMAT_GROUP, Output } from "./output";
@@ -49,10 +49,14 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   storeEnv = { t, warn: (message) => out.warn(message) };
   // An invalid flag is a usage error; an invalid env/config value falls back with a warning.
   if (pre.lang !== undefined && !isLang(pre.lang)) {
-    return out.failure(400, t.errors.unsupportedLang(pre.lang, LANGUAGES.join(", ")));
+    return out.failure(
+      400,
+      t.errors.unsupportedLang(pre.lang, LANGUAGES.join(", ")),
+      REASON.unsupportedLang,
+    );
   }
   if (pre.timezone !== undefined && !isValidTimeZone(pre.timezone)) {
-    return out.failure(400, t.errors.invalidTimezone(pre.timezone));
+    return out.failure(400, t.errors.invalidTimezone(pre.timezone), REASON.invalidTimezone);
   }
   if (lang !== requested) out.warn(t.warnings.unsupportedLang(requested, lang));
   const timezone = resolveTimeZone(settings.TIMEZONE?.value, io, (value, fallback) =>
@@ -68,9 +72,14 @@ export async function runCli(argv: string[], io: Io): Promise<number> {
   } catch (err) {
     if (err instanceof CommanderError) return commanderResult(err, ctx, sink);
     if (isPromptExit(err)) return EXIT_INTERRUPTED;
-    if (err instanceof CliError) return out.failure(err.status, err.message, err.hint);
+    if (err instanceof CliError) return out.failure(err.status, err.message, err.reason, err.hint);
     if (pre.verbose) io.stderr.write(`${err instanceof Error ? err.stack : String(err)}\n`);
-    return out.failure(500, t.errors.unexpected, pre.verbose ? undefined : t.errors.rerunVerbose);
+    return out.failure(
+      500,
+      t.errors.unexpected,
+      REASON.unexpected,
+      pre.verbose ? undefined : t.errors.rerunVerbose,
+    );
   }
 }
 
@@ -104,5 +113,5 @@ function commanderResult(err: CommanderError, { out, t }: Ctx, sink: OutputSink)
     err.code === "commander.help"
       ? t.errors.subcommandRequired
       : err.message.replace(/^error: /, "");
-  return out.failure(400, message);
+  return out.failure(400, message, REASON.usage);
 }

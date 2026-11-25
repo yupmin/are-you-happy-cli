@@ -1,6 +1,6 @@
 import type { Command } from "@commander-js/extra-typings";
 import { type Ctx, cancel } from "../context";
-import { CliError } from "../errors";
+import { CliError, REASON } from "../errors";
 import { LANGUAGES, type Lang, packs } from "../locales";
 import { envKey } from "../project";
 import { maskSetting } from "../settings/mask";
@@ -85,7 +85,7 @@ async function configInit(ctx: Ctx, flags: GlobalFlags): Promise<void> {
   const { prompt } = io;
 
   if (!io.interactive && (flags.lang === undefined || flags.timezone === undefined)) {
-    throw new CliError(400, t.config.init.needFlags);
+    throw new CliError(400, t.config.init.needFlags, REASON.noninteractive);
   }
 
   const lang: Lang =

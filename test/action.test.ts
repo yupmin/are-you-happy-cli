@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { type RunOptions, run, tempDir } from "./helpers";
@@ -34,6 +34,7 @@ describe("action are-you", () => {
     const u = await readyUser();
     const r = await u.areYou("Minsu", { random: () => 0 });
     expect(r.exitCode).toBe(0);
+    expect(r.json().reason).toBeUndefined();
     expect(r.json().data).toEqual({
       name: "Minsu",
       mood: "happy",
@@ -77,6 +78,7 @@ describe("action are-you", () => {
   it("no Config File → 400 / exit 2 telling to run config init", async () => {
     const r = await run(["action", "are-you", "Minsu"]);
     expect(r.exitCode).toBe(2);
+    expect(r.json()).toMatchObject({ code: 400, reason: "config_missing", data: { warnings: [] } });
     expect(r.json().message).toContain("config init");
   });
 
@@ -106,7 +108,11 @@ describe("action are-you", () => {
       setup(u.cwd);
       const r = await u.areYou("Minsu");
       expect(r.exitCode).toBe(3);
-      expect(r.json()).toMatchObject({ code: 401, data: null });
+      expect(r.json()).toMatchObject({
+        code: 401,
+        reason: "no_credentials",
+        data: { warnings: [] },
+      });
       expect(r.json().message).toContain("auth client");
     },
   );
@@ -116,14 +122,18 @@ describe("action are-you", () => {
     u.setToken({ accessToken: "it.me.and.them" });
     const r = await u.areYou("Minsu");
     expect(r.exitCode).toBe(3);
-    expect(r.json()).toMatchObject({ code: 401, data: null });
+    expect(r.json()).toMatchObject({
+      code: 401,
+      reason: "token_rejected",
+      data: { warnings: [] },
+    });
   });
 
   it("missing name → 400 / exit 2", async () => {
     const u = await readyUser();
     const r = await run(["action", "are-you"], { home: u.home, cwd: u.cwd });
     expect(r.exitCode).toBe(2);
-    expect(r.json().code).toBe(400);
+    expect(r.json()).toMatchObject({ code: 400, reason: "usage", data: { warnings: [] } });
   });
 
   it("broken Token State → 400 telling to re-issue", async () => {
@@ -132,6 +142,7 @@ describe("action are-you", () => {
     writeFileSync(u.tokenFile, "{");
     const r = await u.areYou("Minsu");
     expect(r.exitCode).toBe(2);
+    expect(r.json()).toMatchObject({ code: 400, reason: "token_invalid", data: { warnings: [] } });
     expect(r.json().message).toContain("auth issue-token");
   });
 });
@@ -175,7 +186,11 @@ describe("action are-you: token recovery", () => {
     );
     const r = await u.areYou("Minsu", { now: LATER });
     expect(r.exitCode).toBe(3);
-    expect(r.json()).toMatchObject({ code: 401, data: null });
+    expect(r.json()).toMatchObject({
+      code: 401,
+      reason: "credentials_rejected",
+      data: { warnings: [] },
+    });
   });
 
   it("Token State issued for another Client ID → treated as invalid, re-issued", async () => {
@@ -192,5 +207,52 @@ describe("action are-you: token recovery", () => {
     const r = await u.areYou("Minsu", { now: LATER, argv: ["--format", "text"] });
     expect(r.stdout).toContain("Minsu is happy.");
     expect(r.stderr).toMatch(/refresh/i);
+  });
+});
+
+describe("action json failure envelope", () => {
+  it("config_invalid is the same reason in en and ko", async () => {
+    const home = tempDir();
+    mkdirSync(join(home, ".are-you-happy-cli"), { recursive: true });
+    writeFileSync(join(home, ".are-you-happy-cli", "config.json"), "{", { mode: 0o600 });
+    const en = await run(["action", "are-you", "Minsu"], { home });
+    const ko = await run(["action", "are-you", "Minsu"], {
+      home,
+      env: { ARE_YOU_HAPPY_CLI_LANG: "ko" },
+    });
+    expect(en.json().reason).toBe("config_invalid");
+    expect(ko.json().reason).toBe("config_invalid");
+    expect(en.json().message).toContain("Config File is not valid");
+    expect(ko.json().message).toContain("설정 파일이 올바르지 않습니다");
+    expect(ko.json().message).not.toContain("Config File is not valid");
+  });
+
+  it("keeps warnings raised before the failure", async () => {
+    const u = await readyUser();
+    chmodSync(join(u.home, ".are-you-happy-cli", "config.json"), 0o644);
+    u.setToken({ accessToken: "tampered" });
+    const r = await u.areYou("Minsu", { env: { ARE_YOU_HAPPY_CLI_LANG: "ja" } });
+    expect(r.exitCode).toBe(3);
+    expect(r.stderr).toBe("");
+    expect(r.json().reason).toBe("token_rejected");
+    expect(r.json().data.warnings).toEqual([
+      expect.stringContaining("ja"),
+      expect.stringContaining("readable by others"),
+    ]);
+  });
+
+  it("unexpected errors keep warnings and reason unexpected", async () => {
+    const u = await readyUser();
+    rmSync(u.tokenFile);
+    mkdirSync(u.tokenFile);
+    const r = await u.areYou("Minsu", { env: { ARE_YOU_HAPPY_CLI_LANG: "ja" } });
+    expect(r.exitCode).toBe(1);
+    expect(r.stderr).toBe("");
+    expect(r.stdout.trim().split("\n")).toHaveLength(1);
+    expect(r.json()).toMatchObject({
+      code: 500,
+      reason: "unexpected",
+      data: { warnings: [expect.stringContaining("ja")] },
+    });
   });
 });

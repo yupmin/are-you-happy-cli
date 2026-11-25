@@ -1,8 +1,31 @@
-/** An expected failure: carries an HTTP-style status and an optional hint for the user. */
+/**
+ * Language-independent failure ids for the JSON envelope (ADR-0004).
+ * The human message stays in the Language Pack; agents switch on `reason`.
+ */
+export const REASON = {
+  configMissing: "config_missing",
+  configInvalid: "config_invalid",
+  dotenvInvalid: "dotenv_invalid",
+  tokenInvalid: "token_invalid",
+  noCredentials: "no_credentials",
+  credentialsRejected: "credentials_rejected",
+  tokenRejected: "token_rejected",
+  unsupportedLang: "unsupported_lang",
+  invalidTimezone: "invalid_timezone",
+  interactiveOnly: "interactive_only",
+  noninteractive: "noninteractive",
+  usage: "usage",
+  unexpected: "unexpected",
+} as const;
+
+export type Reason = (typeof REASON)[keyof typeof REASON];
+
+/** An expected failure: HTTP-style status, stable reason, optional hint for the user. */
 export class CliError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly reason: Reason,
     readonly hint?: string,
   ) {
     super(message);
