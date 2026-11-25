@@ -1,6 +1,6 @@
 # 얕은 seam은 추가하지 않는다
 
-[ADR-0005](0005-token-issuer-port.md)가 Access Token 발급 seam을 `TokenIssuer`로 정했다. 같은 조사에서 아래 후보는 거절한다. 두 번째 adapter가 없고, interface가 구현과 거의 같다.
+[ADR-0005](0005-token-issuer-port.md)가 Access Token 발급 seam을 `TokenIssuer`로 정했다. 같은 조사에서 아래 후보는 거절한다. 통합 Store, Output strategy, 명령 레지스트리, DI 컨테이너는 두 번째 adapter가 없고 interface가 구현과 거의 같다. 파일 시스템을 `Io`에 넣지 않는 이유는 그 항목에 적는다.
 
 - **통합 Store.** Config File는 시작 시 스냅샷, `.env`는 줄 단위 수정, Token State는 매 `read()`마다 다시 읽는다. 공통 `read`/`write` interface는 세 연산의 합이라 얕다. 공유 구현은 `PrivateFileStore`다.
 - **Output strategy.** text와 json은 `Output` 한 곳이 나눈다. 명령별 renderer는 [ADR-0002](0002-commands-build-result-output-renders.md)가 거절했다. formatter를 나누면 [ADR-0001](0001-json-envelope-on-stdout.md)과 [ADR-0004](0004-failure-warnings-and-reason.md)의 봉투가 갈라진다.
