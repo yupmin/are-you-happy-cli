@@ -5,14 +5,14 @@ import type { LanguagePack } from "../locales";
 import { readIfExists, writePrivateFile } from "./private-file";
 import { PrivateFileStore, type StoreEnv } from "./store";
 
-const TokenStateSchema = z.object({
+const tokenStateSchema = z.object({
   accessToken: z.string().min(1),
   refreshToken: z.string().min(1),
   expiresAt: z.iso.datetime({ offset: true }),
   clientId: z.string().min(1),
 });
 
-export type TokenState = z.infer<typeof TokenStateSchema>;
+export type TokenState = z.infer<typeof tokenStateSchema>;
 
 /** The Token State, read fresh on every call (no lenient read: nothing resolves settings from it). Its folders are created as 700 on save. */
 export class TokenStateStore extends PrivateFileStore<TokenState> {
@@ -41,7 +41,7 @@ export class TokenStateStore extends PrivateFileStore<TokenState> {
   }
 
   protected parse(text: string): TokenState | undefined {
-    const parsed = TokenStateSchema.safeParse(JSON.parse(text));
+    const parsed = tokenStateSchema.safeParse(JSON.parse(text));
     return parsed.success ? parsed.data : undefined;
   }
 

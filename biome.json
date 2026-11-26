@@ -34,6 +34,7 @@
         "noInferrableTypes": "error",
         "noNamespace": "error",
         "noNonNullAssertion": "error",
+        "useArrayLiterals": "error",
         "useConst": "error",
         "useConsistentBuiltinInstantiation": "error",
         "useConsistentTypeDefinitions": {
@@ -53,6 +54,22 @@
             "requireAscii": true,
             "strictCase": false,
             "conventions": [
+              {
+                "selector": { "kind": "function" },
+                "formats": ["camelCase"]
+              },
+              {
+                "selector": { "kind": "variable", "scope": "global" },
+                "formats": ["camelCase", "CONSTANT_CASE"]
+              },
+              {
+                "selector": { "kind": "variable" },
+                "formats": ["camelCase"]
+              },
+              {
+                "selector": { "kind": "functionParameter" },
+                "formats": ["camelCase"]
+              },
               {
                 "selector": { "kind": "enumMember" },
                 "formats": ["CONSTANT_CASE"]

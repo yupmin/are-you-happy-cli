@@ -15,10 +15,11 @@ TypeScript style follows the [Google TypeScript Style Guide](https://google.gith
 | No `any` without a documented reason | `suspicious/noExplicitAny` (tests included; suppress with a comment that says why) |
 | No `!` non-null assertion without a reason | `style/noNonNullAssertion` |
 | `import type` / `export type` for type-only symbols | `style/useImportType`, `style/useExportType` (`verbatimModuleSyntax` already requires this) |
-| Naming: ASCII; `UpperCamelCase` types; `lowerCamelCase` variables, functions, parameters, members; `CONSTANT_CASE` for module-level constants and enum values | `style/useNamingConvention` (`requireAscii: true`; enum members `CONSTANT_CASE`). Defaults already allow `CONSTANT_CASE` on module-level `const` |
+| Naming: ASCII; `UpperCamelCase` types; `lowerCamelCase` variables, functions, parameters, members; `CONSTANT_CASE` for module-level constants and enum values | `style/useNamingConvention` (`requireAscii: true`; functions, variables, and parameters `camelCase`; module-level variables `camelCase` or `CONSTANT_CASE`; enum members `CONSTANT_CASE`). Zod schemas are values, so they are `configSchema`, not `ConfigSchema` |
 | Object types use `interface`, not `type X = { ... }` | `style/useConsistentTypeDefinitions` `style: "interface"` (unions, tuples, and primitives may stay `type`) |
 | `readonly` on class properties that are never reassigned after construction | `style/useReadonlyClassProperties` `checkAllProperties: true` |
-| No `Array` / `Object` constructors, no `new String` / `Boolean` / `Number` | `style/useConsistentBuiltinInstantiation` |
+| No `Array` constructor, with or without `new` | `style/useArrayLiterals` (except the single-argument `Array(n)`; see below) |
+| No `new String` / `Boolean` / `Number` | `style/useConsistentBuiltinInstantiation` (it also requires `new` on `Object()`; see below) |
 | No wrapper types `String`, `Boolean`, `Number`, `Object`, and no `{}` as a type | `complexity/noBannedTypes`. The same rule also flags `Function`, which the guide does not name; Biome cannot split that list |
 | No `@ts-ignore` | `suspicious/noTsIgnore` |
 | No `const enum`, `debugger`, `with`, or `eval`; no `require` / `module.exports` | `suspicious/noConstEnum`, `suspicious/noDebugger`, `suspicious/noWith`, `security/noGlobalEval`, `style/noCommonJs` |
@@ -32,6 +33,8 @@ The recommended preset also bans assignment inside expressions, including the pa
 These guide rules are not enforced, because Biome has no matching rule or only a stricter one:
 
 - `export let` is forbidden. No Biome rule.
+- No `Object` constructor; use `{}`. No Biome rule bans it. `useConsistentBuiltinInstantiation` pushes `Object()` toward `new Object()`, which then passes.
+- No single-argument `Array(n)` / `new Array(n)`; use `Array.from({ length: n })`. `useArrayLiterals` allows that form because it sets a length.
 - `#private` fields are forbidden; use TypeScript `private`. No Biome rule.
 - `T[]` for simple types and `Array<T>` for complex ones. `useConsistentArrayType` can only force one spelling.
 - `@ts-expect-error` and `@ts-nocheck`. `noTsIgnore` flags `@ts-ignore` only. The guide reluctantly allows `@ts-expect-error` in tests; `test/language-pack.types.ts` uses it.

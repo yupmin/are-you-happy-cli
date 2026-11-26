@@ -5,7 +5,7 @@ import type { LanguagePack } from "../locales";
 import { readIfExists, writePrivateFile } from "./private-file";
 import { SnapshotStore } from "./store";
 
-const DotenvSchema = z.record(z.string(), z.string());
+const dotenvSchema = z.record(z.string(), z.string());
 
 type Dotenv = Record<string, string>;
 
@@ -36,7 +36,7 @@ export class DotenvStore extends SnapshotStore<Dotenv> {
   }
 
   protected parse(text: string): Dotenv | undefined {
-    const parsed = DotenvSchema.safeParse(parseEnv(text));
+    const parsed = dotenvSchema.safeParse(parseEnv(text));
     return parsed.success ? parsed.data : undefined;
   }
 
