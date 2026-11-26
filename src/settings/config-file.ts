@@ -5,11 +5,11 @@ import { writePrivateFile } from "./private-file";
 import { SnapshotStore, type StoreEnv } from "./store";
 
 // ENVIRONMENTS holds Environment Settings; every other key is a File-only Setting.
-export const ConfigSchema = z
+export const configSchema = z
   .object({ ENVIRONMENTS: z.record(z.string(), z.string()).optional() })
   .catchall(z.unknown());
 
-export type Config = z.infer<typeof ConfigSchema>;
+export type Config = z.infer<typeof configSchema>;
 
 /** The Config File, read once at startup. Its folder is created as 700 on save. */
 export class ConfigFileStore extends SnapshotStore<Config> {
@@ -26,7 +26,7 @@ export class ConfigFileStore extends SnapshotStore<Config> {
   }
 
   protected parse(text: string): Config | undefined {
-    const parsed = ConfigSchema.safeParse(JSON.parse(text));
+    const parsed = configSchema.safeParse(JSON.parse(text));
     return parsed.success ? parsed.data : undefined;
   }
 
